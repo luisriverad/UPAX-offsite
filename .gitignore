@@ -1,0 +1,9 @@
+# La llave de la API vive aquí y nunca debe subirse. .env.example sí se versiona.
+.env
+.env.local
+
+node_modules
+dist
+tsconfig.tsbuildinfo
+
+.DS_Store
