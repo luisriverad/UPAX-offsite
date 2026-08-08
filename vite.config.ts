@@ -18,6 +18,12 @@ export default defineConfig(({ mode }) => {
             proxy.on('proxyReq', (proxyReq: any) => {
               proxyReq.setHeader('x-api-key', env.ANTHROPIC_API_KEY || '')
               proxyReq.setHeader('anthropic-version', '2023-06-01')
+              // El salto real a Anthropic sale de este servidor, no del navegador.
+              // Si dejamos pasar el Origin heredado del browser, la API lo trata
+              // como llamada directa desde el cliente y exige el header de acceso
+              // directo — que implicaria exponer la llave. Se quitan y ya.
+              proxyReq.removeHeader('origin')
+              proxyReq.removeHeader('referer')
             })
           },
         },

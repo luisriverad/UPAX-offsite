@@ -91,13 +91,48 @@ export const UNIDADES: Unidad[] = [
 
 export const DGS = UNIDADES.map((u) => u.id)
 
-export const PREGUNTAS_DG = [
-  '¿Cuál es el propósito principal de tu unidad dentro de UPAX?',
-  '¿Qué resultado concreto recibe el cliente gracias a tu unidad?',
-  'Pensando en UPAX como grupo, ¿qué debería poder prometerle a cualquier cliente y cumplir siempre?',
-  '¿Cuáles son las 3 cosas que UPAX debe hacer especialmente bien para alcanzar sus objetivos hacia 2027?',
-  'En el día a día, ¿qué comportamientos, prácticas o reglas ayudan a lograr resultados y cuáles los dificultan?',
-]
+/**
+ * El guion de los DGs es EL MISMO que el del CEO: los cuatro bloques, con las
+ * mismas preguntas y en el mismo orden. Es la condición para poder comparar
+ * respuesta contra respuesta en el consolidado, en vez de cruzar textos que
+ * hablaban de cosas distintas. Apuntan al mismo objeto a propósito: así no
+ * pueden divergir al editarse.
+ */
+export const BLOQUES_DG: BloqueEntrevista[] = BLOQUES_CEO
+
+/**
+ * Lo que solo el DG puede contestar: su unidad por dentro. El CEO no responde
+ * este bloque, así que no entra en la comparación respuesta contra respuesta —
+ * sirve para entender qué hace cada unidad y contrastar unidades entre sí.
+ */
+export const BLOQUE_UNIDAD: BloqueEntrevista = {
+  id: 'uni',
+  label: 'Tu unidad',
+  preguntas: [
+    '¿Cuál es el propósito principal de tu unidad dentro de UPAX?',
+    '¿Qué resultado concreto recibe el cliente gracias a tu unidad?',
+    'Pensando en UPAX como grupo, ¿qué debería poder prometerle a cualquier cliente y cumplir siempre?',
+    '¿Cuáles son las 3 cosas que UPAX debe hacer especialmente bien para alcanzar sus objetivos hacia 2027?',
+    'En el día a día, ¿qué comportamientos, prácticas o reglas ayudan a lograr resultados y cuáles los dificultan?',
+  ],
+}
+
+export interface PreguntaGuion {
+  bloque: string
+  bloqueLabel: string
+  /** índice dentro de su bloque */
+  q: number
+  texto: string
+}
+
+const aplanar = (bloques: BloqueEntrevista[]): PreguntaGuion[] =>
+  bloques.flatMap((b) => b.preguntas.map((texto, q) => ({ bloque: b.id, bloqueLabel: b.label, q, texto })))
+
+/** El guion compartido con el CEO, de corrido. Es la base de la comparación. */
+export const GUION: PreguntaGuion[] = aplanar(BLOQUES_CEO)
+
+/** Todo lo que se le pregunta a un DG: el guion compartido más su bloque propio. */
+export const GUION_DG: PreguntaGuion[] = aplanar([...BLOQUES_DG, BLOQUE_UNIDAD])
 
 export interface ArchivoPedido {
   nombre: string

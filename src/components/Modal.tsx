@@ -1,65 +1,49 @@
-import { useEffect, useState } from 'react'
-import { useStore } from '../lib/store'
-import type { Values } from '../types'
+import { useEffect } from 'react'
+import { DGS } from '../data/content'
 
-export type ModalMode = 'export' | 'import' | null
+export type ModalMode = 'limpiar' | null
 
-export default function Modal({ mode, onClose }: { mode: ModalMode; onClose: () => void }) {
-  const { values, replaceAll } = useStore()
-  const [texto, setTexto] = useState('')
-  const [error, setError] = useState('')
-
+/**
+ * Confirmación de una acción que no se puede deshacer. Va como modal de la
+ * aplicación y no como `confirm()` del navegador para poder decir exactamente
+ * qué se pierde: un diálogo del sistema no da espacio para eso.
+ */
+export default function Modal({
+  mode,
+  onClose,
+  onConfirmar,
+}: {
+  mode: ModalMode
+  onClose: () => void
+  onConfirmar: () => void
+}) {
+  // salir con Escape: es la vía de escape que todo el mundo intenta primero
   useEffect(() => {
-    setError('')
-    setTexto(mode === 'export' ? JSON.stringify(values, null, 2) : '')
-  }, [mode, values])
+    if (!mode) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mode, onClose])
 
   if (!mode) return null
 
-  function importar() {
-    try {
-      const parsed = JSON.parse(texto) as Values
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new Error('formato')
-      replaceAll(parsed)
-      onClose()
-    } catch {
-      setError('El JSON no es válido. Pega el contenido exportado tal cual.')
-    }
-  }
-
   return (
     <div className="mask" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>{mode === 'export' ? 'Exportar sesión' : 'Importar sesión'}</h3>
+      <div className="modal confirmar" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+        <h3>¿Seguro quieres borrar todo?</h3>
         <p>
-          {mode === 'export'
-            ? 'Copia este JSON para respaldar o compartir todo lo capturado.'
-            : 'Pega un JSON exportado. Reemplaza todo lo que hay ahora.'}
+          Se borra toda la captura del proceso: la entrevista con el CEO, las de las {DGS.length} unidades, los archivos
+          marcados y la arquitectura construida en el Off-Site. <b>No se puede deshacer.</b>
         </p>
-        <textarea
-          value={texto}
-          readOnly={mode === 'export'}
-          onChange={(e) => setTexto(e.target.value)}
-          placeholder={mode === 'import' ? '{ … }' : undefined}
-        />
-        {error && <p className="modal-err">{error}</p>}
         <div className="modal-btns">
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Cerrar
+          <button type="button" className="btn btn-ghost" onClick={onClose} autoFocus>
+            Cancelar
           </button>
-          {mode === 'export' ? (
-            <button
-              type="button"
-              className="btn btn-dark"
-              onClick={() => navigator.clipboard?.writeText(texto).catch(() => undefined)}
-            >
-              Copiar
-            </button>
-          ) : (
-            <button type="button" className="btn btn-dark" onClick={importar}>
-              Importar
-            </button>
-          )}
+          <button type="button" className="btn btn-peligro" onClick={onConfirmar}>
+            Sí, borrar todo
+          </button>
         </div>
       </div>
     </div>

@@ -48,23 +48,24 @@ export default function App() {
         <span className="marca">
           UPAX OFF-SITE · <b>ARQUITECTURA DE CULTURA</b>
         </span>
+
+        {/* el nombre del método, al centro: las iniciales resaltadas explican el acrónimo */}
+        <div className="vibe">
+          <span className="vibe-n">
+            VIBE <em>Framework</em>
+          </span>
+          <span className="vibe-s">
+            <b>V</b>alue · <b>I</b>mperatives · <b>B</b>ehavior · <b>E</b>conomics
+          </span>
+        </div>
         <div className="topbar-r">
           <span className="avance">
             Pre-evento {avance.pre}% · Off-Site {avance.off}%
           </span>
-          <button type="button" className="mini" onClick={() => setModal('export')}>
-            Exportar
+          <button type="button" className="mini" onClick={() => window.print()}>
+            Exportar a PDF
           </button>
-          <button type="button" className="mini" onClick={() => setModal('import')}>
-            Importar
-          </button>
-          <button
-            type="button"
-            className="mini"
-            onClick={() => {
-              if (confirm('Esto borra toda la captura del proceso. ¿Continuar?')) reset()
-            }}
-          >
+          <button type="button" className="mini" onClick={() => setModal('limpiar')}>
             Limpiar
           </button>
         </div>
@@ -138,7 +139,14 @@ export default function App() {
         </div>
       </div>
 
-      <Modal mode={modal} onClose={() => setModal(null)} />
+      <Modal
+        mode={modal}
+        onClose={() => setModal(null)}
+        onConfirmar={() => {
+          reset()
+          setModal(null)
+        }}
+      />
     </div>
   )
 }

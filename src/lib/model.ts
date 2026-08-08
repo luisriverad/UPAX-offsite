@@ -3,8 +3,8 @@ import {
   BLOQUES_CEO,
   CAMPOS_PROPUESTA,
   DGS,
+  GUION_DG,
   MATRIZ_BLOQUES,
-  PREGUNTAS_DG,
   UNIDADES,
   VISTAS_CONSOLIDADO,
 } from '../data/content'
@@ -32,7 +32,8 @@ export const K = {
 
   // el prefijo `cec.` se conserva para no perder lo ya capturado
   ceo: (bloque: string, q: number) => `cec.${bloque}.${q}`,
-  dg: (n: number, q: number) => `dg.${n}.${q}`,
+  // los DGs siguen el mismo guion que el CEO, así que su clave lleva bloque igual
+  dg: (n: number, bloque: string, q: number) => `dg.${n}.${bloque}.${q}`,
   dgArch: (n: number, a: number) => `dg.${n}.arch.${a}`,
   dgUnidad: (n: number) => `dg.${n}.unidad`,
   dgPersona: (n: number) => `dg.${n}.persona`,
@@ -364,11 +365,16 @@ export function respuestasCeo(v: Values, bloque?: string): number {
 }
 
 export function respuestasDG(v: Values): number {
-  return DGS.reduce((n, d) => n + PREGUNTAS_DG.filter((_, q) => g(v, K.dg(d, q))).length, 0)
+  return DGS.reduce((n, d) => n + GUION_DG.filter((p) => g(v, K.dg(d, p.bloque, p.q))).length, 0)
 }
 
 export function dgsQueRespondieron(v: Values): number {
-  return DGS.filter((d) => PREGUNTAS_DG.some((_, q) => g(v, K.dg(d, q)))).length
+  return DGS.filter((d) => GUION_DG.some((p) => g(v, K.dg(d, p.bloque, p.q)))).length
+}
+
+/** Respuestas de un DG, opcionalmente acotadas a un bloque. */
+export function respuestasDeDG(v: Values, d: number, bloque?: string): number {
+  return GUION_DG.filter((p) => (!bloque || p.bloque === bloque) && g(v, K.dg(d, p.bloque, p.q))).length
 }
 
 export function archivosCargados(v: Values): number {

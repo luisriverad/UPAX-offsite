@@ -1,4 +1,4 @@
-import { BLOQUES_CEO, PREGUNTAS_DG, UNIDADES } from '../data/content'
+import { BLOQUES_CEO, GUION_DG, UNIDADES } from '../data/content'
 import { K, recorta } from './model'
 import type { Values } from '../types'
 
@@ -28,6 +28,12 @@ export interface Grupo {
   /** borrador ligado al mismo renglón de otro bloque; manda sobre `fuentes` */
   borradorDe?: (i: number) => string
   /**
+   * Respaldo y contradicciones del borrador. Van aparte del texto porque el
+   * borrador se guarda tal cual en el campo: la atribución es para leerla, no
+   * para que termine dentro de la definición.
+   */
+  metaDe?: (i: number) => { base: string; tension: string }
+  /**
    * El tramo produce una síntesis real de la evidencia, no un reciclaje de
    * frases. Entonces el análisis se entrega SIEMPRE, aunque el campo ya tenga
    * texto: el valor está en poder comparar lo escrito contra la evidencia.
@@ -53,12 +59,13 @@ export function gruposCeo(): Grupo[] {
   }))
 }
 
+/** Un tramo por unidad, con el guion completo del CEO y el bloque a la vista. */
 export function gruposDgs(): Grupo[] {
   return UNIDADES.map((u) => ({
     id: `dg${u.id}`,
     label: u.nombre,
-    preguntas: PREGUNTAS_DG,
-    clave: (i: number) => K.dg(u.id, i),
+    preguntas: GUION_DG.map((p) => `[${p.bloqueLabel}] ${p.texto}`),
+    clave: (i: number) => K.dg(u.id, GUION_DG[i].bloque, GUION_DG[i].q),
     angulo: '¿Esto pasa solo en tu unidad o le pasa a todo UPAX?',
   }))
 }
@@ -304,12 +311,16 @@ export function analizar(v: Values, grupos: Grupo[]): AnalisisGrupo[] {
         fuente = propio || disponibles[siguiente++] || ''
       }
 
+      const meta = fuente ? gr.metaDe?.(i) : undefined
+
       return {
         clave: gr.clave(i),
         numero: i + 1,
         pregunta: gr.preguntas[i],
         propuesta: fuente ? (gr.breve ? resumeBreve(fuente) : fuente) : '',
         actual: r,
+        base: meta?.base || undefined,
+        tension: meta?.tension || undefined,
       }
     })
 

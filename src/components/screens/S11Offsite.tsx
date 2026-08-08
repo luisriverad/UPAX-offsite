@@ -4,8 +4,8 @@ import { K, archivosCargados, avancePorFamilia, fraseCeo, recorta, unidadDe } fr
 import { useStore } from '../../lib/store'
 import { Chip, Field, PillTabs } from '../ui'
 
-/** Pregunta del guion de DGs que alimenta la promesa del grupo. */
-const PREGUNTA_PROMESA_DG = 2
+/** Pregunta del guion —común a CEO y DGs— que define la promesa del grupo. */
+const PROMESA = { bloque: 'pdv', q: 1 }
 
 export default function S11Offsite() {
   const { values, get, set, logVersion } = useStore()
@@ -17,8 +17,8 @@ export default function S11Offsite() {
   const estado = get(`${bloque.src}.estado`)
 
   const ceo = fraseCeo(values, 'pdv')
-  const dg = DGS.find((d) => get(K.dg(d, PREGUNTA_PROMESA_DG)))
-  const fuentes = [ceo, dg ? get(K.dg(dg, PREGUNTA_PROMESA_DG)) : '', String(archivosCargados(values) || '')].filter(
+  const dg = DGS.find((d) => get(K.dg(d, PROMESA.bloque, PROMESA.q)))
+  const fuentes = [ceo, dg ? get(K.dg(dg, PROMESA.bloque, PROMESA.q)) : '', String(archivosCargados(values) || '')].filter(
     Boolean,
   ).length
 
@@ -89,7 +89,7 @@ export default function S11Offsite() {
             <Chip tone="azul">{dg ? unidadDe(values, dg) : 'DGs'}</Chip>
             <p className="ev-txt">
               {dg ? (
-                recorta(get(K.dg(dg, PREGUNTA_PROMESA_DG)), 90)
+                recorta(get(K.dg(dg, PROMESA.bloque, PROMESA.q)), 90)
               ) : (
                 <span className="muted">sin captura en la pantalla 03</span>
               )}

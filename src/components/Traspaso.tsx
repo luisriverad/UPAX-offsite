@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import Ejemplos from './Ejemplos'
 import { entregaPreEvento } from '../lib/model'
 import { useStore } from '../lib/store'
 import type { ModuloId, TabId } from '../types'
@@ -9,6 +11,7 @@ import type { ModuloId, TabId } from '../types'
  */
 export default function Traspaso({ modulo, onIr }: { modulo: ModuloId; onIr: (tab: TabId) => void }) {
   const { values } = useStore()
+  const [verEjemplos, setVerEjemplos] = useState(false)
   const items = entregaPreEvento(values)
   const listos = items.filter((i) => i.hecho >= i.total).length
   const vacios = items.filter((i) => i.hecho === 0).length
@@ -48,6 +51,13 @@ export default function Traspaso({ modulo, onIr }: { modulo: ModuloId; onIr: (ta
           )
         })}
       </div>
+
+      {/* referencia a la mano en todas las pantallas: para desatorar la sesión */}
+      <button type="button" className="btn btn-dark tr-ejemplos" onClick={() => setVerEjemplos(true)}>
+        Ver ejemplos
+      </button>
+
+      <Ejemplos abierto={verEjemplos} onClose={() => setVerEjemplos(false)} />
     </section>
   )
 }

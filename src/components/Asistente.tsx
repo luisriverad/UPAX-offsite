@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { analizar, cuestionar } from '../lib/asistenteEntrevista'
 import type { AnalisisGrupo, ResultadoCuestionar } from '../lib/asistenteEntrevista'
 import { asistenteDePantalla } from '../lib/asistentePantalla'
+import { UNIDADES } from '../data/content'
 import { ErrorIA, hayEvidencia, repreguntar, sintetizar } from '../lib/ia'
 import { useStore } from '../lib/store'
 import type { ScreenMeta } from '../types'
@@ -25,6 +26,8 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
   const [avisoIA, setAvisoIA] = useState('')
   const [conIA, setConIA] = useState(false)
   const [omitidos, setOmitidos] = useState(0)
+  const [fallidos, setFallidos] = useState(0)
+  const [lotes, setLotes] = useState({ hechos: 0, total: 0 })
   const [seg, setSeg] = useState(0)
 
   // la llamada tarda decenas de segundos: sin contador el panel parece colgado
@@ -52,6 +55,8 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
     setAvisoIA('')
     setConIA(false)
     setOmitidos(0)
+    setFallidos(0)
+    setLotes({ hechos: 0, total: 0 })
     setInsertados([])
   }
 
@@ -63,9 +68,13 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
     if (!hayEvidencia(values)) return
 
     setPensando(true)
+    setLotes({ hechos: 0, total: 0 })
     try {
-      const { campos, omitidos } = await sintetizar(values, screen.title, local)
+      const { campos, omitidos, fallidos } = await sintetizar(values, screen.title, local, (hechos, total) =>
+        setLotes({ hechos, total }),
+      )
       if (campos.size === 0) throw new ErrorIA('El modelo no devolvió ninguna síntesis utilizable.')
+      setFallidos(fallidos)
       setAnalisis(
         local.map((b) => ({
           ...b,
@@ -125,11 +134,13 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
       {modo && (pensando || conIA || avisoIA) && (
         <p className={`asis-origen ${avisoIA ? 'err' : conIA ? 'ia' : ''}`}>
           {pensando
-            ? `Leyendo toda la evidencia del CEO y los DGs… ${seg}s`
+            ? `Borrador local abajo. El consultor lee la evidencia del CEO y las ${UNIDADES.length} unidades… ${
+                lotes.total > 0 ? `${lotes.hechos} de ${lotes.total} bloques · ` : ''
+              }${seg}s`
             : conIA
               ? `Redactado por el modelo sobre toda la evidencia.${
-                  omitidos > 0 ? ` No alcanzó para ${omitidos} campos: vuelve a pulsar Analizar para los que falten.` : ''
-                }`
+                  fallidos > 0 ? ` ${fallidos} ${fallidos === 1 ? 'bloque falló' : 'bloques fallaron'} y quedaron en borrador local.` : ''
+                }${omitidos > 0 ? ` No alcanzó para ${omitidos} campos: vuelve a pulsar Analizar para los que falten.` : ''}`
               : `${avisoIA} Se muestra el análisis local.`}
         </p>
       )}
@@ -180,7 +191,9 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
               {b.items.map((it) => {
                 const yaEsta = Boolean(it.propuesta) && it.propuesta === it.actual
                 return (
-                  <div key={it.clave} className="asis-falta">
+                  // mientras el modelo redacta, lo que se ve es el borrador local:
+                  // se marca y no se deja guardar, para no comprometer un provisional
+                  <div key={it.clave} className={`asis-falta ${pensando ? 'provisional' : ''}`}>
                     <p className="asis-preg">
                       {it.numero}. {it.pregunta}
                     </p>
@@ -199,17 +212,19 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
                             <button
                               type="button"
                               className="btn btn-ghost"
-                              disabled={insertados.includes(it.clave)}
+                              disabled={pensando || insertados.includes(it.clave)}
                               onClick={() => {
                                 set(it.clave, it.propuesta)
                                 setInsertados((prev) => [...prev, it.clave])
                               }}
                             >
-                              {insertados.includes(it.clave)
-                                ? 'Listo ✓'
-                                : it.actual
-                                  ? 'Reemplazar con esto'
-                                  : 'Completar'}
+                              {pensando
+                                ? 'Esperando al modelo…'
+                                : insertados.includes(it.clave)
+                                  ? 'Listo ✓'
+                                  : it.actual
+                                    ? 'Reemplazar con esto'
+                                    : 'Completar'}
                             </button>
                           </>
                         )}

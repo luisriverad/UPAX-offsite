@@ -37,13 +37,20 @@ button,input,textarea,select{font-family:inherit;color:inherit}
  * ---------------------------------------------------------------- */
 .app{display:flex;flex-direction:column;height:100%}
 
+/* tres columnas en vez de space-between: así el centro queda centrado de verdad,
+   sin depender de que los extremos midan lo mismo */
 .topbar{
-  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;
+  flex:0 0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;
   padding:0 40px;height:62px;border-bottom:1px solid var(--line);background:#fff;
 }
+.vibe{display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1;white-space:nowrap}
+.vibe-n{font-size:16px;font-weight:800;letter-spacing:.08em}
+.vibe-n em{font-style:normal;font-weight:600;font-size:12px;letter-spacing:.02em;color:var(--muted)}
+.vibe-s{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.vibe-s b{color:var(--orange);font-weight:800}
 .marca{font-size:11.5px;letter-spacing:.16em;font-weight:600;color:var(--muted);text-transform:uppercase}
 .marca b{color:var(--ink);font-weight:800}
-.topbar-r{display:flex;align-items:center;gap:8px}
+.topbar-r{display:flex;align-items:center;gap:8px;justify-self:end}
 .avance{font-size:11.5px;color:var(--muted);font-weight:600;margin-right:6px;font-variant-numeric:tabular-nums}
 .mini{
   font-size:11.5px;font-weight:700;padding:7px 12px;border-radius:8px;
@@ -127,6 +134,21 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .tr-item.falta .tr-pt{background:var(--red)}
 .tr-item.parcial .tr-pt{background:var(--orange)}
 .tr-item.ok .tr-pt{background:var(--green)}
+.tr-ejemplos{flex:0 0 auto;white-space:nowrap}
+
+/* ---------------------------------------------------------------- *
+ * Ejemplos de otras empresas
+ * ---------------------------------------------------------------- */
+.modal.ejemplos{width:min(1500px,100%);max-height:92vh}
+.ejemplos-h{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.ejemplos-h h3{margin:0 0 4px}
+.ejemplos-h p{margin:0}
+.ejemplos-lienzo{
+  flex:1;min-height:0;margin-top:16px;overflow:auto;
+  border:1px solid var(--line);border-radius:10px;background:var(--soft);
+}
+.ejemplos-lienzo img{display:block;width:100%;height:auto}
+.ejemplos-nota{margin-right:auto;font-size:11.5px;color:var(--muted);align-self:center;max-width:520px;line-height:1.4}
 
 .cols{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;margin-top:20px;align-items:start}
 .cols.sola{grid-template-columns:minmax(0,1fr)}
@@ -152,6 +174,8 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 
 .dos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+/* en DGs las dos columnas de preguntas cargan texto largo; los archivos son una lista compacta */
+.tres.dgs{grid-template-columns:minmax(0,1.15fr) minmax(0,1.15fr) minmax(0,0.9fr)}
 
 .chip{
   display:inline-flex;align-items:center;font-size:10px;font-weight:800;letter-spacing:.07em;
@@ -175,6 +199,8 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .btn-dark:hover:not(:disabled){background:#000;border-color:#000}
 .btn-orange{background:var(--orange);border-color:var(--orange);color:#fff}
 .btn-orange:hover:not(:disabled){background:var(--orange-d);border-color:var(--orange-d)}
+.btn-peligro{background:var(--red);border-color:var(--red);color:#fff}
+.btn-peligro:hover:not(:disabled){background:#B62F11;border-color:#B62F11}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 
 .pills{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -547,6 +573,9 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
  * ---------------------------------------------------------------- */
 .mask{position:fixed;inset:0;background:rgba(20,20,26,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:24px}
 .modal{background:#fff;border-radius:16px;width:min(720px,100%);padding:24px;max-height:82vh;display:flex;flex-direction:column}
+/* la confirmación no lleva textarea: cabe en mucho menos */
+.modal.confirmar{width:min(460px,100%)}
+.modal.confirmar p{font-size:13px;line-height:1.55;color:var(--ink2)}
 .modal h3{margin:0 0 6px;font-size:18px;font-weight:800;letter-spacing:-.02em}
 .modal p{margin:0 0 14px;font-size:13px;color:var(--muted)}
 .modal textarea{flex:1;min-height:280px;border:1px solid var(--line);border-radius:10px;padding:12px;
@@ -565,7 +594,8 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
   .doc-body{overflow:visible}
 }
 @media (max-width:900px){
-  .topbar{padding:0 20px;height:auto;flex-wrap:wrap;gap:10px;padding-top:12px;padding-bottom:12px}
+  .topbar{padding:12px 20px;height:auto;grid-template-columns:minmax(0,1fr);justify-items:center;gap:10px}
+  .topbar-r{justify-self:center}
   .hoja{padding:24px 20px 32px}
   h1{font-size:26px}
   .dos,.tres,.offsite,.contadores,.identidad{grid-template-columns:minmax(0,1fr)}
@@ -590,3 +620,85 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
   .cols{grid-template-columns:1fr}
   .panel{border:0;padding:0}
 }
+
+/* borrador local mientras el modelo redacta: se ve provisional a propósito */
+.asis-falta.provisional{opacity:.45}
+
+/* ---------------------------------------------------------------- *
+ * One-page: la arquitectura en la plantilla de los ejemplos
+ * ---------------------------------------------------------------- */
+.onepage{background:#fff;color:var(--ink);font-size:12px;line-height:1.45}
+.op-h{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;
+  padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.op-h h2{margin:0;font-size:32px;font-weight:800;letter-spacing:-.03em}
+.op-h-r{text-align:right;display:flex;flex-direction:column;gap:3px}
+.op-h-sub{font-size:11px;color:var(--muted)}
+.op-h-sub b{color:var(--orange);font-weight:800}
+.op-vibe{font-size:14px;font-weight:800;letter-spacing:.08em}
+.op-vibe em{font-style:normal;font-weight:600;font-size:11px;letter-spacing:.02em;color:var(--muted)}
+
+/* la letra del método delante de su bloque: el acrónimo se lee en el documento */
+.op-letra{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:15px;height:15px;border-radius:4px;margin-right:5px;vertical-align:-2px;
+  background:var(--orange);color:#fff;font-size:9px;font-weight:800;letter-spacing:0;
+}
+.op-tag .op-letra{vertical-align:-3px}
+
+/* etiqueta de sección: versalitas espaciadas, en el color de acento */
+.op-sec{margin:20px 0 10px;font-size:10px;font-weight:800;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--orange)}
+.op-mini{display:block;font-size:8.5px;font-weight:800;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+
+.op-card{border:1px solid var(--line);border-radius:10px;background:#fff;padding:13px 15px;min-width:0}
+.op-card.destacada{border-left:4px solid var(--orange)}
+.op-txt{margin:0;font-size:14px;line-height:1.4}
+.op-promesa{margin:0;font-size:17px;font-weight:800;line-height:1.25;letter-spacing:-.01em}
+.op-falta{margin:0;font-size:11.5px;color:var(--red);font-style:italic}
+
+.op-pdv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch}
+
+/* una columna por imperativo; envuelven de a dos como en los ejemplos */
+.op-imps{display:grid;grid-template-columns:repeat(auto-fit,minmax(390px,1fr));gap:14px}
+.op-imp{display:flex;flex-direction:column;gap:10px;min-width:0}
+.op-imp-h{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--orange-soft)}
+.op-imp-h h3{margin:0;font-size:14px;font-weight:800;line-height:1.25}
+.op-num{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
+
+.op-tag{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  border-left:3px solid var(--orange);padding-left:8px;margin-bottom:11px}
+.op-dos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
+  margin-top:11px;padding-top:11px;border-top:1px solid var(--line2)}
+.op-lista ul{list-style:none;margin:0;padding:0}
+.op-lista li{position:relative;padding-left:9px;margin-bottom:3px;font-size:11px;line-height:1.4;color:var(--ink2)}
+.op-lista li::before{content:"•";position:absolute;left:0;color:var(--muted)}
+.op-estandar b{font-size:12px;font-weight:700}
+
+.op-inds{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.op-ind{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-radius:8px;background:var(--soft)}
+.op-ind b{font-size:11.5px}
+.op-ind-n{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.op-ind-n em{font-style:normal;font-weight:600;color:var(--muted);font-size:10px}
+.op-ind-f{font-size:10px;color:var(--muted)}
+
+.op-pie{display:flex;justify-content:space-between;gap:16px;margin-top:18px;padding-top:10px;
+  border-top:1px solid var(--line);font-size:9.5px;color:var(--muted)}
+.op-marca{font-weight:800;letter-spacing:.14em;color:var(--orange)}
+
+@media (max-width:900px){
+  .op-pdv,.op-dos{grid-template-columns:minmax(0,1fr)}
+  .op-imps{grid-template-columns:minmax(0,1fr)}
+}
+
+/* Exportar one-page: se imprime la lámina sola, apaisada como los ejemplos */
+@media print{
+  body.solo-onepage *{visibility:hidden}
+  body.solo-onepage .onepage,body.solo-onepage .onepage *{visibility:visible}
+  body.solo-onepage .onepage{position:absolute;left:0;top:0;width:100%}
+  body.solo-onepage .op-card,body.solo-onepage .op-imp{break-inside:avoid}
+  /* página con nombre: apaisada solo para la lámina, sin voltear el resto de exportaciones */
+  body.solo-onepage .onepage{page:paisaje}
+}
+@page paisaje{size:landscape;margin:10mm}

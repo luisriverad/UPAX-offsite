@@ -4,8 +4,8 @@ import { useStore } from '../../lib/store'
 import { Chip, Foot, Line, Panel } from '../ui'
 import type { ScreenProps } from './tipos'
 
-/** Índice de la pregunta sobre imperativos en el guion de los DGs. */
-const PREGUNTA_IMP_DG = 3
+/** Pregunta del guion —común a CEO y DGs— sobre lo que hay que hacer excepcionalmente bien. */
+const IMPERATIVOS = { bloque: 'imp', q: 0 }
 
 export default function S06Imperativos({ screen }: ScreenProps) {
   const { values, get, num, set } = useStore()
@@ -15,7 +15,7 @@ export default function S06Imperativos({ screen }: ScreenProps) {
   const bloqueImp = BLOQUES_CEO.find((b) => b.id === 'imp')
   const fuentes =
     (bloqueImp?.preguntas.filter((_, q) => get(K.ceo('imp', q))).length ?? 0) +
-    DGS.filter((d) => get(K.dg(d, PREGUNTA_IMP_DG))).length
+    DGS.filter((d) => get(K.dg(d, IMPERATIVOS.bloque, IMPERATIVOS.q))).length
 
   return (
     <Panel

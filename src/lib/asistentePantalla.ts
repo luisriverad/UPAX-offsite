@@ -3,9 +3,11 @@ import {
   BLOQUES_OFFSITE,
   CAMPOS_PROPUESTA,
   DGS,
+  GUION,
   UNIDADES,
   VISTAS_CONSOLIDADO,
 } from '../data/content'
+import type { VistaConsolidado } from '../data/content'
 import { ANGULO_CEO, gruposCeo, gruposDgs } from './asistenteEntrevista'
 import type { Grupo } from './asistenteEntrevista'
 import { COND_ROWS_DEFAULT, IND_DEFAULT, IMP_DEFAULT, K, columnas, imperativos, unidadDe } from './model'
@@ -28,22 +30,20 @@ const int = (v: Values, k: string, def: number) => {
  * Evidencia: de dónde saca cada pantalla su respaldo
  * ------------------------------------------------------------------ */
 
-/** Índices del guion de los DGs, para no repartir números sueltos por el archivo. */
-const DG_PROPOSITO = 0
-const DG_RESULTADO = 1
-const DG_PROMESA = 2
-const DG_IMPERATIVOS = 3
-const DG_CULTURA = 4
-
 /** Lo que dijo el CEO en un bloque de su entrevista. */
 function ceo(v: Values, bloque: string): string[] {
   const b = BLOQUES_CEO.find((x) => x.id === bloque)
   return b ? b.preguntas.map((_, q) => g(v, K.ceo(bloque, q))).filter(Boolean) : []
 }
 
-/** Lo que contestaron los DGs a una pregunta del guion. */
-function dgs(v: Values, pregunta: number): string[] {
-  return DGS.map((d) => g(v, K.dg(d, pregunta))).filter(Boolean)
+/** Lo que contestaron las unidades a una pregunta concreta del guion. */
+function dgs(v: Values, bloque: string, q: number): string[] {
+  return DGS.map((d) => g(v, K.dg(d, bloque, q))).filter(Boolean)
+}
+
+/** Todo lo que dijeron las unidades en un bloque completo. */
+function dgsBloque(v: Values, bloque: string): string[] {
+  return GUION.filter((p) => p.bloque === bloque).flatMap((p) => dgs(v, bloque, p.q))
 }
 
 /** Las síntesis ya escritas en el consolidado para una vista. */
@@ -70,25 +70,25 @@ const capitaliza = (t: string) => t.charAt(0) + t.slice(1).toLowerCase()
  * ------------------------------------------------------------------ */
 
 /**
- * A qué preguntas concretas corresponde cada tema del consolidado. Sin este
- * mapa, el asistente solo podría ofrecer una frase suelta del bloque entero;
- * con él, cada síntesis cruza lo que dijo el CEO sobre ese tema con lo que
- * dijeron los DGs de cada unidad sobre lo mismo.
+ * Qué preguntas de su bloque alimentan a cada tema del consolidado. Como el CEO
+ * y los DGs contestan EL MISMO guion, un solo juego de índices sirve para los
+ * dos: la síntesis compara la respuesta del CEO contra la de cada unidad a la
+ * misma pregunta, no dos textos que hablaban de cosas distintas.
  */
-const FUENTES_TEMA: Record<string, { ceo: number[]; dg: number[] }> = {
-  'pdv.existimos': { ceo: [0, 3], dg: [DG_PROPOSITO, DG_RESULTADO] },
-  'pdv.promesa': { ceo: [1, 2], dg: [DG_PROMESA] },
-  'pdv.puente': { ceo: [4], dg: [DG_PROMESA] },
-  'imp.candidatos': { ceo: [0, 3], dg: [DG_IMPERATIVOS] },
-  'imp.prioridades': { ceo: [1], dg: [DG_IMPERATIVOS] },
-  'imp.dejar': { ceo: [2], dg: [DG_CULTURA] },
-  'cul.conductas': { ceo: [0, 1], dg: [DG_CULTURA] },
-  'cul.practicas': { ceo: [3], dg: [DG_CULTURA] },
-  'cul.mecanismos': { ceo: [2, 3], dg: [DG_CULTURA] },
-  'neg.estandares': { ceo: [0], dg: [] },
-  'neg.indicadores': { ceo: [1], dg: [] },
-  'neg.procesos': { ceo: [0], dg: [DG_CULTURA] },
-  'neg.politicas': { ceo: [0], dg: [DG_CULTURA] },
+const FUENTES_TEMA: Record<string, number[]> = {
+  'pdv.existimos': [0, 3],
+  'pdv.promesa': [1, 2],
+  'pdv.puente': [4],
+  'imp.candidatos': [0, 3],
+  'imp.prioridades': [1],
+  'imp.dejar': [2],
+  'cul.conductas': [0, 1],
+  'cul.practicas': [3],
+  'cul.mecanismos': [2, 3],
+  'neg.estandares': [0],
+  'neg.indicadores': [1],
+  'neg.procesos': [0],
+  'neg.politicas': [0],
 }
 
 const normaliza = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -152,57 +152,62 @@ interface Voz {
   texto: string
 }
 
+export interface SintesisLocal {
+  /** el texto que va al campo: la definición, sin narrar quién dijo qué */
+  sintesis: string
+  /** sobre qué evidencia se apoya */
+  base: string
+  /** dónde no coinciden */
+  tension: string
+}
+
 /**
- * Redacta la síntesis de un tema cruzando las dos fuentes: qué dijo el CEO y
- * qué dijeron las unidades. Marca dónde coinciden y dónde no, y cierra
- * declarando sobre cuánta evidencia está construida.
+ * Síntesis de respaldo, sin modelo. No puede redactar prosa nueva: elige la
+ * formulación mejor sostenida por la evidencia y la entrega limpia, con la
+ * atribución aparte. Cuando hay llave, el modelo reescribe esto encima.
  */
-function sintesisTema(v: Values, bloque: string, ceoIdx: number[], dgIdx: number[]): string {
-  const delCeo = ceoIdx.map((q) => g(v, K.ceo(bloque, q))).filter(Boolean)
-  const voces: Voz[] = UNIDADES.flatMap((u) =>
-    dgIdx.map((q) => ({ unidad: unidadDe(v, u.id), texto: g(v, K.dg(u.id, q)) })),
-  ).filter((x) => x.texto)
+function sintesisTema(v: Values, bloque: string, idx: number[]): SintesisLocal {
+  const vacia: SintesisLocal = { sintesis: '', base: '', tension: '' }
 
-  if (!delCeo.length && !voces.length) return ''
+  const delCeo = idx.map((q) => g(v, K.ceo(bloque, q))).filter(Boolean)
 
-  const partes: string[] = []
+  // mismas preguntas para todos: cada unidad se compara contra el CEO en el
+  // mismo índice. Una unidad cuenta una sola vez aunque conteste varias.
+  const porUnidad = new Map<string, string>()
+  UNIDADES.forEach((u) => {
+    const suyas = idx.map((q) => g(v, K.dg(u.id, bloque, q))).filter(Boolean)
+    if (suyas.length) porUnidad.set(unidadDe(v, u.id), suyas.sort((a, z) => z.length - a.length)[0])
+  })
+  const voces: Voz[] = [...porUnidad].map(([unidad, texto]) => ({ unidad, texto }))
+
+  if (!delCeo.length && !voces.length) return vacia
 
   // el CEO manda como referencia; si no contestó ese tema, la marca la primera unidad
   const conCeo = delCeo.length > 0
-  const referencia = conCeo ? principal(delCeo[0]) : principal(voces[0].texto)
+  const sintesis = conCeo ? principal(delCeo[0]) : principal(voces[0].texto)
   const resto = conCeo ? voces : voces.slice(1)
 
-  if (conCeo) {
-    partes.push(`El CEO lo plantea así: “${referencia}”.`)
-  } else {
-    partes.push(`Sin respuesta del CEO en este tema. ${voces[0].unidad} lo describe así: “${referencia}”.`)
-  }
-
-  const clave = terminos(referencia)
+  const clave = terminos(sintesis)
   const coinciden = resto.filter((x) => comparten(clave, terminos(x.texto)) >= 2)
   const aparte = resto.filter((x) => !coinciden.includes(x))
 
-  if (coinciden.length) {
-    const verbo = coinciden.length === 1 ? 'Coincide' : 'Coinciden'
-    partes.push(
-      `${verbo} ${coinciden.length} de ${UNIDADES.length} unidades: ${coinciden.map((x) => x.unidad).join(', ')}.`,
-    )
-  }
-  if (aparte.length) {
-    partes.push(`${aparte[0].unidad} lo plantea distinto: “${principal(aparte[0].texto)}”.`)
-    if (aparte.length > 1) {
-      partes.push(`También se apartan: ${aparte.slice(1).map((x) => x.unidad).join(', ')}.`)
-    }
-  }
-
-  // decir sobre qué está construida la síntesis importa tanto como la síntesis
-  if (!voces.length && dgIdx.length) {
-    partes.push(`Ninguna unidad ha respondido sobre este tema todavía: esto se apoya solo en el CEO.`)
-  }
-  partes.push(
-    `Base: ${delCeo.length} ${delCeo.length === 1 ? 'respuesta' : 'respuestas'} del CEO y ${voces.length} de ${UNIDADES.length} unidades.`,
+  const base: string[] = []
+  base.push(
+    conCeo
+      ? `${delCeo.length} ${delCeo.length === 1 ? 'respuesta' : 'respuestas'} del CEO`
+      : `sin respuesta del CEO en este tema; formulación de ${voces[0].unidad}`,
   )
-  return partes.join(' ')
+  if (coinciden.length) base.push(`la sostienen ${coinciden.map((x) => x.unidad).join(', ')}`)
+  base.push(`${voces.length} de ${UNIDADES.length} unidades con respuesta`)
+
+  const tension: string[] = []
+  if (aparte.length) {
+    tension.push(`${aparte[0].unidad} propone en cambio: “${principal(aparte[0].texto)}”`)
+    if (aparte.length > 1) tension.push(`también se apartan ${aparte.slice(1).map((x) => x.unidad).join(', ')}`)
+  }
+  if (!voces.length) tension.push('ninguna unidad ha respondido sobre este tema todavía')
+
+  return { sintesis, base: `${base.join(' · ')}.`, tension: tension.length ? `${tension.join('; ')}.` : '' }
 }
 
 /** 04 · una síntesis por tema, cruzando CEO y DGs sobre ese tema en concreto. */
@@ -216,12 +221,16 @@ function gruposConsolidado(v: Values): Grupo[] {
     sintetiza: true,
     // sin `fuentes`: el borrador es la síntesis del tema o no hay borrador.
     // Una frase suelta de otro tema no es una síntesis y no debe ofrecerse.
-    borradorDe: (i: number) => {
-      const tema = vista.temas[i]
-      const f = FUENTES_TEMA[`${vista.id}.${tema.id}`]
-      return f ? sintesisTema(v, tema.bloque, f.ceo, f.dg) : ''
-    },
+    borradorDe: (i: number) => sintesisDeVista(v, vista, i).sintesis,
+    metaDe: (i: number) => sintesisDeVista(v, vista, i),
   }))
+}
+
+/** Resuelve el tema de una vista del consolidado a su síntesis local. */
+function sintesisDeVista(v: Values, vista: VistaConsolidado, i: number): SintesisLocal {
+  const tema = vista.temas[i]
+  const f = FUENTES_TEMA[`${vista.id}.${tema.id}`]
+  return f ? sintesisTema(v, tema.bloque, f) : { sintesis: '', base: '', tension: '' }
 }
 
 /** 05 · los tres campos del Excel, alimentados por consolidado y entrevistas. */
@@ -238,13 +247,21 @@ function gruposPropuesta(v: Values): Grupo[] {
       // sintetizaron ahí, esa es la fuente; si no, se sintetiza la evidencia cruda
       borradorDe: (i: number) => {
         const campo = CAMPOS_PROPUESTA[i]
+        return g(v, K.cons('pdv', campo.id)) || sintesisDePropuesta(v, i).sintesis
+      },
+      metaDe: (i: number) => {
+        const campo = CAMPOS_PROPUESTA[i]
         const yaConsolidado = g(v, K.cons('pdv', campo.id))
-        if (yaConsolidado) return yaConsolidado
-        const f = FUENTES_TEMA[`pdv.${campo.id}`]
-        return f ? sintesisTema(v, 'pdv', f.ceo, f.dg) : ''
+        if (yaConsolidado) return { base: 'Tomado de la síntesis aprobada en el Consolidado.', tension: '' }
+        return sintesisDePropuesta(v, i)
       },
     },
   ]
+}
+
+function sintesisDePropuesta(v: Values, i: number): SintesisLocal {
+  const f = FUENTES_TEMA[`pdv.${CAMPOS_PROPUESTA[i].id}`]
+  return f ? sintesisTema(v, 'pdv', f) : { sintesis: '', base: '', tension: '' }
 }
 
 /** 06 · el enunciado y su nombre corto se juzgan por separado: no piden lo mismo. */
@@ -258,7 +275,7 @@ function gruposImperativos(v: Values): Grupo[] {
       preguntas: etiquetas,
       clave: (i: number) => K.impNombre(i),
       angulo: `¿Esto aplica igual en las ${UNIDADES.length} unidades o solo en algunas?`,
-      fuentes: [...consolidado(v, 'imp'), ...ceo(v, 'imp'), ...dgs(v, DG_IMPERATIVOS)],
+      fuentes: [...consolidado(v, 'imp'), ...ceo(v, 'imp'), ...dgsBloque(v, 'imp')],
     },
     {
       id: 'imp-corto',
@@ -275,7 +292,7 @@ function gruposImperativos(v: Values): Grupo[] {
 /** 07 · una columna por imperativo, cada una con sus renglones de comportamiento. */
 function gruposConductas(v: Values): Grupo[] {
   const filas = int(v, K.condRows, COND_ROWS_DEFAULT)
-  const evidencia = [...consolidado(v, 'cul'), ...ceo(v, 'cul'), ...dgs(v, DG_CULTURA)]
+  const evidencia = [...consolidado(v, 'cul'), ...ceo(v, 'cul'), ...dgsBloque(v, 'cul')]
   return columnas(v).map((c) => ({
     id: `cond-${c.i}`,
     label: `Conductas · ${c.label}`,
@@ -293,7 +310,7 @@ function gruposPracticas(v: Values): Grupo[] {
   const conductas = cols
     .flatMap((c) => Array.from({ length: filas }, (_, r) => g(v, K.cond(c.i, r))))
     .filter(Boolean)
-  const evidencia = [...ceo(v, 'cul'), ...dgs(v, DG_CULTURA)]
+  const evidencia = [...ceo(v, 'cul'), ...dgsBloque(v, 'cul')]
   return [
     {
       id: 'prac',
@@ -381,7 +398,7 @@ function gruposProcesos(v: Values): Grupo[] {
 /** 11 · lo que se decide en vivo: versión preliminar y su alternativa. */
 function gruposOffsite(v: Values): Grupo[] {
   const etiquetas = BLOQUES_OFFSITE.map((b) => capitaliza(b.label))
-  const evidencia = [...consolidado(v, 'pdv'), ...ceo(v, 'pdv'), ...dgs(v, DG_PROMESA)]
+  const evidencia = [...consolidado(v, 'pdv'), ...ceo(v, 'pdv'), ...dgsBloque(v, 'pdv')]
   return [
     {
       id: 'off',

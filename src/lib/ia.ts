@@ -1,4 +1,4 @@
-import { ARCHIVOS_DG, BLOQUES_CEO, DGS, PREGUNTAS_DG, UNIDADES } from '../data/content'
+import { ARCHIVOS_DG, BLOQUE_UNIDAD, BLOQUES_CEO, DGS, UNIDADES } from '../data/content'
 import type { AnalisisGrupo, Repregunta } from './asistenteEntrevista'
 import { K, unidadDe } from './model'
 import type { Values } from '../types'
@@ -17,27 +17,42 @@ const g = (v: Values, k: string) => (v[k] ?? '').trim()
  * La evidencia que se le entrega al modelo
  * ------------------------------------------------------------------ */
 
-/** Todo lo capturado con el CEO y con los DGs, en texto plano. */
+/**
+ * Todo lo capturado, agrupado POR PREGUNTA. El CEO y las ocho unidades contestan
+ * el mismo guion, así que ponerlos uno junto a otro bajo cada pregunta es lo que
+ * permite comparar posturas en vez de leer dos entrevistas por separado.
+ */
 export function evidencia(v: Values): string {
   const out: string[] = []
 
-  const delCeo: string[] = []
-  BLOQUES_CEO.forEach((b) => {
-    b.preguntas.forEach((p, q) => {
-      const r = g(v, K.ceo(b.id, q))
-      if (r) delCeo.push(`[${b.label}] ${p}\n  → ${r}`)
-    })
-  })
-  if (delCeo.length) out.push('=== ENTREVISTA CON EL CEO ===', ...delCeo)
+  // el bloque propio de la unidad va al final: ahí el CEO no contesta
+  ;[...BLOQUES_CEO, BLOQUE_UNIDAD].forEach((b) => {
+    const compartido = b.id !== BLOQUE_UNIDAD.id
+    const delBloque: string[] = []
 
-  const deDgs: string[] = []
-  DGS.forEach((d) => {
-    PREGUNTAS_DG.forEach((p, q) => {
-      const r = g(v, K.dg(d, q))
-      if (r) deDgs.push(`[${unidadDe(v, d)}] ${p}\n  → ${r}`)
+    b.preguntas.forEach((pregunta, q) => {
+      const voces: string[] = []
+      if (compartido) {
+        const delCeo = g(v, K.ceo(b.id, q))
+        if (delCeo) voces.push(`  CEO → ${delCeo}`)
+      }
+      DGS.forEach((d) => {
+        const r = g(v, K.dg(d, b.id, q))
+        if (r) voces.push(`  ${unidadDe(v, d)} → ${r}`)
+      })
+      // una pregunta que nadie contestó no aporta y solo alarga el prompt
+      if (voces.length) delBloque.push(`P${q + 1}. ${pregunta}`, ...voces, '')
     })
+
+    if (delBloque.length) {
+      out.push(
+        compartido
+          ? `=== BLOQUE: ${b.label.toUpperCase()} (mismo guion para CEO y unidades) ===`
+          : `=== ${b.label.toUpperCase()} (solo responden las unidades; el CEO no contesta este bloque) ===`,
+        ...delBloque,
+      )
+    }
   })
-  if (deDgs.length) out.push('', '=== ENTREVISTAS CON LOS DGs ===', ...deDgs)
 
   const archivos: string[] = []
   DGS.forEach((d) => {
@@ -59,15 +74,19 @@ export function hayEvidencia(v: Values): boolean {
  * ------------------------------------------------------------------ */
 
 const SISTEMA = [
-  'Eres el analista del proceso de arquitectura de cultura de UPAX, un grupo mexicano con ocho unidades de negocio:',
-  UNIDADES.map((u) => u.nombre).join(', ') + '.',
+  'Eres consultor senior de management, nivel socio de firma de primer nivel, conduciendo el proceso de arquitectura',
+  `de cultura de UPAX: grupo mexicano con ${UNIDADES.length} unidades de negocio (${UNIDADES.map((u) => u.nombre).join(', ')}).`,
   '',
-  'Tu trabajo es sintetizar la evidencia de las entrevistas, no inventarla. Reglas:',
-  '- Trabaja SOLO con lo que aparece en la evidencia. No agregues ejemplos, cifras ni nombres que no estén ahí.',
-  '- Distingue lo que dice el CEO de lo que dice cada unidad, y señala cuando no coinciden. El desacuerdo entre unidades es información valiosa, no algo que suavizar.',
-  '- Rechaza el lenguaje genérico. "Calidad", "excelencia", "sinergia" o "clase mundial" no dicen nada por sí solos: si la evidencia solo ofrece eso, dilo en vez de repetirlo.',
-  '- Español de México, tono ejecutivo y directo. Sin preámbulo, sin relleno, sin cerrar ofreciendo ayuda.',
-  '- Cuando la evidencia no alcance para un campo, deja la síntesis vacía y explica por qué. Es preferible a inventar.',
+  'Recibes las respuestas del CEO y de los directores de cada unidad a LAS MISMAS preguntas.',
+  'Tu entregable no es un reporte de lo que dijo cada quien: es la conclusión que el grupo va a adoptar.',
+  '',
+  'Cómo trabajas:',
+  '- Lees todas las respuestas de un mismo tema y decides qué sostiene realmente la evidencia. Donde hay divergencia, tomas postura razonada en lugar de listar posturas.',
+  '- Escribes la conclusión como definición final del documento: en presente, afirmativa, sin condicionales ni "debería". Un director tiene que poder leerla en voz alta en el comité sin editarla.',
+  '- Distingues una diferencia de énfasis de un desacuerdo real. Solo lo segundo es una decisión pendiente.',
+  '- Rechazas el lenguaje genérico: "calidad", "excelencia", "sinergia", "clase mundial", "ser los mejores" no son conclusiones, son ruido. Si toda la evidencia es de ese tipo, lo dices en vez de maquillarlo.',
+  '- No inventas. Todo lo que afirmes tiene que poder rastrearse a una respuesta concreta.',
+  '- Español de México. Tono ejecutivo y directo, sin preámbulo ni cierre cortés.',
 ].join('\n')
 
 /** El modelo devuelve JSON validado contra estos esquemas, no texto libre que haya que parsear. */
@@ -83,16 +102,17 @@ const ESQUEMA_SINTESIS = {
           sintesis: {
             type: 'string',
             description:
-              'La definición que la evidencia sostiene, redactada como texto final para el documento, no como comentario sobre la evidencia. Una a tres frases. Cadena vacía si no hay evidencia suficiente.',
+              'La conclusión. Una o dos frases en presente, redactadas como la definición final que UPAX adopta — no como resumen de lo que dijo cada quien. Es lo que se guarda tal cual en el documento. Cadena vacía solo si la evidencia no da para ninguna conclusión.',
           },
           base: {
             type: 'string',
-            description: 'Sobre qué evidencia está construida: qué dijo el CEO y qué unidades lo sostienen. Una frase.',
+            description:
+              'En una frase: sobre qué se sostiene la conclusión y qué tan sólido es el respaldo — quién converge y cuántas unidades lo respaldan.',
           },
           tension: {
             type: 'string',
             description:
-              'Dónde se contradicen las unidades o el CEO, citando quién. Máximo dos frases. Cadena vacía si no hay tensión.',
+              'La decisión que el grupo tiene pendiente: qué hay que resolver y por qué importa para el negocio. No una lista de quién dijo qué. Máximo dos frases. Cadena vacía si no hay desacuerdo real, solo diferencias de énfasis.',
           },
         },
         required: ['clave', 'sintesis', 'base', 'tension'],
@@ -160,12 +180,20 @@ async function llamar(instruccion: string, esquema: unknown): Promise<unknown> {
     throw new ErrorIA('No se pudo conectar con el modelo. Revisa la red.')
   }
 
-  if (res.status === 401 || res.status === 403) {
-    throw new ErrorIA('La llave de la API no es válida o no tiene permisos.', true)
-  }
   if (!res.ok) {
-    const detalle = await res.text().catch(() => '')
-    throw new ErrorIA(`El modelo respondió ${res.status}. ${detalle.slice(0, 160)}`)
+    // el mensaje de la propia API dice mucho más que cualquier suposición nuestra
+    const detalle = await res
+      .json()
+      .then((e: { error?: { message?: string } }) => e?.error?.message ?? '')
+      .catch(() => '')
+
+    if (res.status === 401 || res.status === 403) {
+      throw new ErrorIA(
+        `La API rechazó la llave (${res.status}). ${detalle} · Si acabas de ponerla en .env.local, reinicia el servidor: Vite solo lee las variables al arrancar.`,
+        true,
+      )
+    }
+    throw new ErrorIA(`El modelo respondió ${res.status}. ${detalle.slice(0, 180)}`)
   }
 
   const data = (await res.json()) as {
@@ -199,50 +227,105 @@ export interface SintesisIA {
 }
 
 /**
- * Tope de campos por llamada. Una pantalla de cierre puede juntar cuarenta y
- * pico: sin tope, la espera y la respuesta se disparan. Se priorizan los vacíos.
+ * El modelo escribe ~60 tokens por segundo, en serie. Una sola llamada con los
+ * trece campos del consolidado son ~2100 tokens de salida: 35 segundos, y el
+ * effort no cambia nada porque el tiempo se va en escribir, no en pensar.
+ * Medido: 13 campos = 35s, 3 campos = 13s. Por eso se manda un lote por bloque
+ * y se corren en paralelo: la espera pasa a ser la del lote más lento.
  */
-const MAX_CAMPOS = 24
+const MAX_POR_LOTE = 6
+/** tope de llamadas simultáneas, para no chocar con el límite de la cuenta */
+const MAX_LOTES = 6
+
+interface Lote {
+  grupo: string
+  items: AnalisisGrupo['items']
+}
 
 export interface ResultadoSintesis {
   campos: Map<string, SintesisIA>
   /** cuántos campos quedaron fuera por el tope, para poder decirlo */
   omitidos: number
+  /** cuántos lotes fallaron, para no cantar victoria completa */
+  fallidos: number
 }
 
-/** Redacta la síntesis de cada campo de la pantalla sobre toda la evidencia. */
-export async function sintetizar(v: Values, pantalla: string, grupos: AnalisisGrupo[]): Promise<ResultadoSintesis> {
-  const todos = grupos.flatMap((b) => b.items.map((it) => ({ it, grupo: b.label })))
-  // primero los que están vacíos: ahí es donde el análisis hace más falta
-  const orden = [...todos].sort((a, z) => Number(Boolean(a.it.actual)) - Number(Boolean(z.it.actual)))
-  const elegidos = orden.slice(0, MAX_CAMPOS)
-  if (!elegidos.length) return { campos: new Map(), omitidos: 0 }
+const vacios = (l: Lote) => l.items.filter((it) => !it.actual).length
 
+async function sintetizarLote(v: Values, pantalla: string, lote: Lote): Promise<Map<string, SintesisIA>> {
   const instruccion = [
     'EVIDENCIA RECOLECTADA',
     evidencia(v) || '(todavía no hay nada capturado)',
     '',
-    `CAMPOS A SINTETIZAR — pantalla "${pantalla}"`,
-    ...elegidos.map(({ it, grupo }) =>
-      [`- clave: ${it.clave}`, `  campo: ${grupo} · ${it.pregunta}`, `  texto actual: ${it.actual || '(vacío)'}`].join('\n'),
+    `CAMPOS A SINTETIZAR — pantalla "${pantalla}", bloque "${lote.grupo}"`,
+    ...lote.items.map((it) =>
+      [`- clave: ${it.clave}`, `  campo: ${it.pregunta}`, `  texto actual: ${it.actual || '(vacío)'}`].join('\n'),
     ),
     '',
     'TAREA',
-    'Para cada clave listada devuelve un objeto con sintesis, base y tension.',
-    'La sintesis es el texto que se va a guardar tal cual en el campo: escríbela como definición final, no como comentario sobre las entrevistas.',
-    'Si el campo ya tiene texto, no lo repitas: propón la versión que la evidencia realmente sostiene, aunque contradiga lo escrito.',
-    'Sé breve: la sintesis de una a tres frases, la base una sola frase, la tension como mucho dos.',
+    'Para cada clave, analiza TODAS las respuestas del tema —la del CEO y la de cada unidad a la misma pregunta— y entrega tu conclusión.',
+    'La sintesis se guarda tal cual en el documento: escríbela como la frase que UPAX adopta, no como comentario sobre las entrevistas ni como recuento de posturas.',
+    'Si el campo ya tiene texto, evalúalo contra la evidencia y propón la versión que la evidencia sostiene, aunque contradiga lo escrito.',
+    'Sé breve: sintesis una o dos frases, base una, tension como mucho dos.',
     'Devuelve exactamente un objeto por clave, con la clave copiada literal.',
   ].join('\n')
 
-  const data = (await llamar(instruccion, ESQUEMA_SINTESIS)) as { campos?: { clave: string; sintesis: string; base: string; tension: string }[] }
+  const data = (await llamar(instruccion, ESQUEMA_SINTESIS)) as {
+    campos?: { clave: string; sintesis: string; base: string; tension: string }[]
+  }
   const campos = new Map<string, SintesisIA>()
   ;(data.campos ?? []).forEach((c) => {
     if (c?.clave && c.sintesis?.trim()) {
       campos.set(c.clave, { sintesis: c.sintesis.trim(), base: c.base?.trim() ?? '', tension: c.tension?.trim() ?? '' })
     }
   })
-  return { campos, omitidos: todos.length - elegidos.length }
+  return campos
+}
+
+/** Redacta la síntesis de cada campo de la pantalla sobre toda la evidencia. */
+export async function sintetizar(
+  v: Values,
+  pantalla: string,
+  grupos: AnalisisGrupo[],
+  /** avisa cada vez que un lote termina, para poder mostrar el avance */
+  onLote?: (hechos: number, total: number) => void,
+): Promise<ResultadoSintesis> {
+  const lotes: Lote[] = []
+  grupos.forEach((b) => {
+    for (let i = 0; i < b.items.length; i += MAX_POR_LOTE) {
+      lotes.push({ grupo: b.label, items: b.items.slice(i, i + MAX_POR_LOTE) })
+    }
+  })
+  // primero donde más falta hace: los lotes con más campos vacíos
+  lotes.sort((a, z) => vacios(z) - vacios(a))
+
+  const elegidos = lotes.slice(0, MAX_LOTES)
+  const omitidos = lotes.slice(MAX_LOTES).reduce((n, l) => n + l.items.length, 0)
+  if (!elegidos.length) return { campos: new Map(), omitidos: 0, fallidos: 0 }
+
+  let hechos = 0
+  const resultados = await Promise.allSettled(
+    elegidos.map((l) =>
+      sintetizarLote(v, pantalla, l).finally(() => {
+        hechos++
+        onLote?.(hechos, elegidos.length)
+      }),
+    ),
+  )
+
+  const campos = new Map<string, SintesisIA>()
+  resultados.forEach((r) => {
+    if (r.status === 'fulfilled') r.value.forEach((val, clave) => campos.set(clave, val))
+  })
+
+  // si TODOS fallaron, es un error de verdad y hay que decirlo, no devolver vacío
+  const fallidos = resultados.filter((r) => r.status === 'rejected').length
+  if (fallidos === resultados.length) {
+    const primero = resultados.find((r) => r.status === 'rejected') as PromiseRejectedResult
+    throw primero.reason instanceof ErrorIA ? primero.reason : new ErrorIA('No se pudo consultar al modelo.')
+  }
+
+  return { campos, omitidos, fallidos }
 }
 
 /* ------------------------------------------------------------------ *

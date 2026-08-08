@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { ARCHIVOS_DG, DGS, PREGUNTAS_DG } from '../../data/content'
-import { K, unidadDe } from '../../lib/model'
+import { ARCHIVOS_DG, BLOQUE_UNIDAD, BLOQUES_DG, DGS } from '../../data/content'
+import { K, respuestasDeDG, unidadDe } from '../../lib/model'
 import { guardarAdjunto, leerAdjunto, pesoLegible, revisarArchivos } from '../../lib/revisionArchivos'
 import type { Revision } from '../../lib/revisionArchivos'
 import { useStore } from '../../lib/store'
@@ -9,7 +9,11 @@ import { Field, Line, PillTabs } from '../ui'
 export default function S03Dgs() {
   const { values, get, set } = useStore()
   const [dg, setDg] = useState(1)
+  const [bloqueId, setBloque] = useState(BLOQUES_DG[0].id)
   const [revision, setRevision] = useState<Revision | null>(null)
+
+  // mismo guion que el CEO: cuatro bloques, y se captura uno a la vez
+  const bloque = BLOQUES_DG.find((b) => b.id === bloqueId) ?? BLOQUES_DG[0]
 
   // la pestaña lleva el nombre de la unidad, del catálogo o del campo
   const etiqueta = (d: number) => {
@@ -43,17 +47,52 @@ export default function S03Dgs() {
         </label>
       </div>
 
-      <div className="dos">
+      <div className="tres dgs">
         <div className="caja">
-          <span className="panel-t">PREGUNTAS</span>
+          <header className="caja-h">
+            <span className="panel-t">MISMO GUION QUE EL CEO</span>
+            <span className="muted">
+              {respuestasDeDG(values, dg, bloque.id)} de {bloque.preguntas.length} respondidas
+            </span>
+          </header>
+
+          <PillTabs
+            size="sm"
+            items={BLOQUES_DG.map((b) => ({ id: b.id, label: b.label }))}
+            value={bloqueId}
+            onChange={setBloque}
+          />
+
           <ol className="preguntas num">
-            {PREGUNTAS_DG.map((p, i) => (
+            {bloque.preguntas.map((p, i) => (
               <li key={p}>
                 <div className="preg-row">
                   <span className="preg-n plano">{i + 1}.</span>
                   <span className="preg-t">{p}</span>
                 </div>
-                <Field k={K.dg(dg, i)} placeholder="Respuesta / notas…" />
+                <Field k={K.dg(dg, bloque.id, i)} placeholder="Respuesta / notas…" />
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* lo que solo el DG puede contestar: el CEO no responde este bloque */}
+        <div className="caja">
+          <header className="caja-h">
+            <span className="panel-t">SOLO DE ESTA UNIDAD</span>
+            <span className="muted">
+              {respuestasDeDG(values, dg, BLOQUE_UNIDAD.id)} de {BLOQUE_UNIDAD.preguntas.length} respondidas
+            </span>
+          </header>
+
+          <ol className="preguntas num">
+            {BLOQUE_UNIDAD.preguntas.map((p, i) => (
+              <li key={p}>
+                <div className="preg-row">
+                  <span className="preg-n plano">{i + 1}.</span>
+                  <span className="preg-t">{p}</span>
+                </div>
+                <Field k={K.dg(dg, BLOQUE_UNIDAD.id, i)} placeholder="Respuesta / notas…" />
               </li>
             ))}
           </ol>
