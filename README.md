@@ -105,6 +105,18 @@ Los títulos, subtítulos y las cuatro directrices del asistente de cada pantall
 
 ---
 
+## Entrevistas a distancia (PDF editable)
+
+Cuando no se puede hacer el 1:1, las pantallas 02 y 03 traen **Descargar PDF editable** y una zona para **subir el PDF contestado** (arrastrar o hacer clic; acepta varios a la vez).
+
+El PDF lleva un campo de formulario por pregunta y cada campo se llama como su llave del store (`dg.3.pdv.0`), así que al regresar la respuesta cae exactamente en la pregunta que le toca. Lo que se sube **se mezcla** con lo capturado: solo escribe las llaves que el PDF trae con texto, nunca reemplaza la sesión, y subir dos veces el mismo archivo es inofensivo.
+
+Se rechazan los PDFs sin campos —los que alguien imprimió o re-exportó como imagen— y los que no son entrevistas de UPAX. `pdf-lib` se carga bajo demanda: no entra en el bundle inicial.
+
+Todo vive en `src/lib/pdfEntrevista.ts` y `src/components/PdfEntrevista.tsx`. Si cambian las preguntas no hay que tocar nada; si cambian las **llaves** de `K` en `model.ts`, los PDFs viejos dejan de importar.
+
+---
+
 ## Datos de la sesión
 
 Se guardan solos en `localStorage` con la llave `upax_arquitectura_v2`. En la barra superior están **Exportar** e **Importar** (JSON completo) y **Limpiar**. En la pantalla 12 hay además **Exportar PDF** (impresión), **Exportar Excel** (CSV) e **Historial de versiones**.

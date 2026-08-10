@@ -692,6 +692,25 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
   .op-imps{grid-template-columns:minmax(0,1fr)}
 }
 
+/* Entrevista a distancia: bajar el PDF editable y subirlo contestado */
+.pdfent{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.pdfent-h{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}
+
+.pdfent-zona{
+  display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;
+  padding:20px 18px;border:1.5px dashed var(--line);border-radius:12px;background:#fff;
+  cursor:pointer;transition:border-color .15s,background .15s;
+}
+.pdfent-zona:hover,.pdfent-zona:focus-visible{border-color:var(--ink);outline:none}
+.pdfent-zona.encima{border-color:var(--orange);background:var(--orange-soft)}
+.pdfent-zona.ocupado{pointer-events:none;opacity:.6}
+.pdfent-zona b{font-size:13px;font-weight:700;color:var(--ink)}
+.pdfent-zona em{font-style:normal;font-size:11.5px;line-height:1.5;color:var(--muted);max-width:46ch}
+
+.pdfent-aviso{margin:10px 0 0;font-size:12px;line-height:1.5;font-weight:600}
+.pdfent-aviso.ok{color:var(--green)}
+.pdfent-aviso.error{color:var(--red)}
+
 /* Exportar one-page: se imprime la lámina sola, apaisada como los ejemplos */
 @media print{
   body.solo-onepage *{visibility:hidden}

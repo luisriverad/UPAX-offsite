@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BLOQUES_CEO } from '../../data/content'
 import { K, respuestasCeo } from '../../lib/model'
 import { useStore } from '../../lib/store'
+import PdfEntrevista from '../PdfEntrevista'
 import { Chip, Field, Panel, SideTabs } from '../ui'
 
 export default function S02Ceo() {
@@ -64,6 +65,8 @@ export default function S02Ceo() {
               )
             })}
           </ol>
+
+          <PdfEntrevista dest={{ tipo: 'ceo' }} />
         </div>
       </div>
     </Panel>

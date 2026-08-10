@@ -4,6 +4,7 @@ import { K, respuestasDeDG, unidadDe } from '../../lib/model'
 import { guardarAdjunto, leerAdjunto, pesoLegible, revisarArchivos } from '../../lib/revisionArchivos'
 import type { Revision } from '../../lib/revisionArchivos'
 import { useStore } from '../../lib/store'
+import PdfEntrevista from '../PdfEntrevista'
 import { Field, Line, PillTabs } from '../ui'
 
 export default function S03Dgs() {
@@ -46,6 +47,9 @@ export default function S03Dgs() {
           <Line k={K.dgPersona(dg)} placeholder="Nombre y puesto de quien contesta" />
         </label>
       </div>
+
+      {/* el PDF lleva los dos bloques de la unidad: el guion compartido y el propio */}
+      <PdfEntrevista key={dg} dest={{ tipo: 'dg', id: dg }} />
 
       <div className="tres dgs">
         <div className="caja">
