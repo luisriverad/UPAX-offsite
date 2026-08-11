@@ -1,6 +1,7 @@
 import { ARCHIVOS_DG, BLOQUE_UNIDAD, BLOQUES_CEO, DGS, UNIDADES } from '../data/content'
-import type { AnalisisGrupo, Repregunta } from './asistenteEntrevista'
+import type { AnalisisGrupo } from './asistenteEntrevista'
 import { K, unidadDe } from './model'
+import { MOLDES_PDV, campoPdv, conArranque } from './redaccionPdv'
 import type { Values } from '../types'
 
 /**
@@ -124,30 +125,6 @@ const ESQUEMA_SINTESIS = {
   additionalProperties: false,
 } as const
 
-const ESQUEMA_DUDAS = {
-  type: 'object',
-  properties: {
-    dudas: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          clave: { type: 'string', description: 'la clave exacta de la respuesta, copiada de la lista' },
-          repreguntas: {
-            type: 'array',
-            description: 'Tres repreguntas sobre esa respuesta en concreto.',
-            items: { type: 'string' },
-          },
-        },
-        required: ['clave', 'repreguntas'],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ['dudas'],
-  additionalProperties: false,
-} as const
-
 export class ErrorIA extends Error {
   constructor(
     message: string,
@@ -158,7 +135,7 @@ export class ErrorIA extends Error {
   }
 }
 
-async function llamar(instruccion: string, esquema: unknown): Promise<unknown> {
+async function llamar(sistema: string, instruccion: string, esquema: unknown): Promise<unknown> {
   let res: Response
   try {
     res = await fetch('/api/anthropic/v1/messages', {
@@ -172,7 +149,7 @@ async function llamar(instruccion: string, esquema: unknown): Promise<unknown> {
         // medido sobre los 13 campos del consolidado: `medium` tarda ~34s y la
         // calidad se sostiene; `high` no mejora lo suficiente para el doble de espera
         output_config: { effort: 'medium', format: { type: 'json_schema', schema: esquema } },
-        system: SISTEMA,
+        system: sistema,
         messages: [{ role: 'user', content: instruccion }],
       }),
     })
@@ -252,7 +229,23 @@ export interface ResultadoSintesis {
 
 const vacios = (l: Lote) => l.items.filter((it) => !it.actual).length
 
+/**
+ * Los tres campos de la Propuesta de Valor tienen arranque fijo. Se le dice al
+ * modelo antes de escribir —y de todos modos se verifica al recibir—, tanto
+ * cuando redacta la síntesis como cuando solo corrige la redacción.
+ */
+function reglasDeForma(lote: Lote): string[] {
+  return lote.items
+    .map((it) => {
+      const campo = campoPdv(it.clave)
+      return campo ? `- ${it.clave} → el texto empieza literalmente con ${MOLDES_PDV[campo].regla}` : ''
+    })
+    .filter(Boolean)
+}
+
 async function sintetizarLote(v: Values, pantalla: string, lote: Lote): Promise<Map<string, SintesisIA>> {
+  const forma = reglasDeForma(lote)
+
   const instruccion = [
     'EVIDENCIA RECOLECTADA',
     evidencia(v) || '(todavía no hay nada capturado)',
@@ -268,15 +261,29 @@ async function sintetizarLote(v: Values, pantalla: string, lote: Lote): Promise<
     'Si el campo ya tiene texto, evalúalo contra la evidencia y propón la versión que la evidencia sostiene, aunque contradiga lo escrito.',
     'Sé breve: sintesis una o dos frases, base una, tension como mucho dos.',
     'Devuelve exactamente un objeto por clave, con la clave copiada literal.',
+    ...(forma.length
+      ? [
+          '',
+          'FORMA OBLIGATORIA DE LA REDACCIÓN',
+          ...forma,
+          'No es una preferencia de estilo: una sintesis que no empiece así está mal escrita.',
+          'El arranque es parte de la frase, no un título: lo que sigue debe leerse de corrido con él.',
+          'En la frase puente el verbo va en futuro y en primera persona del plural, sin excepción.',
+        ]
+      : []),
   ].join('\n')
 
-  const data = (await llamar(instruccion, ESQUEMA_SINTESIS)) as {
+  const data = (await llamar(SISTEMA, instruccion, ESQUEMA_SINTESIS)) as {
     campos?: { clave: string; sintesis: string; base: string; tension: string }[]
   }
   const campos = new Map<string, SintesisIA>()
   ;(data.campos ?? []).forEach((c) => {
     if (c?.clave && c.sintesis?.trim()) {
-      campos.set(c.clave, { sintesis: c.sintesis.trim(), base: c.base?.trim() ?? '', tension: c.tension?.trim() ?? '' })
+      campos.set(c.clave, {
+        sintesis: conArranque(c.clave, c.sintesis),
+        base: c.base?.trim() ?? '',
+        tension: c.tension?.trim() ?? '',
+      })
     }
   })
   return campos
@@ -329,35 +336,148 @@ export async function sintetizar(
 }
 
 /* ------------------------------------------------------------------ *
- * Cuestionar
+ * Elevar la redacción
  * ------------------------------------------------------------------ */
 
-/** Reescribe las repreguntas para que hablen de la respuesta concreta, no de un molde. */
-export async function repreguntar(v: Values, pantalla: string, dudas: Repregunta[]): Promise<Map<string, string[]>> {
-  const conTexto = dudas.filter((d) => d.respuesta)
-  if (!conTexto.length) return new Map()
+/**
+ * Otro oficio, no otra versión del mismo. El de arriba lee la evidencia cruda y
+ * decide QUÉ dice el documento; este ya no discute el contenido: toma la idea
+ * que el grupo decidió y la vuelve a escribir al nivel de un documento que se
+ * presenta a un consejo. No es un corrector de ortografía: es un salto de
+ * registro.
+ */
+const SISTEMA_REDACCION = [
+  'Escribes como el CEO de una empresa trasnacional que cotiza en Wall Street. Ese es el nivel exigido:',
+  'lo que redactas se lee en un comité ejecutivo, en un informe anual y frente a inversionistas.',
+  '',
+  `Trabajas sobre la arquitectura de cultura ya decidida de UPAX: grupo mexicano con ${UNIDADES.length} unidades de negocio`,
+  `(${UNIDADES.map((u) => u.nombre).join(', ')}).`,
+  '',
+  'NO eres un corrector de ortografía. Corregir acentos y comas no es tu trabajo y no es lo que se te pide.',
+  'Tu trabajo es tomar la MISMA idea y volver a escribirla con un lenguaje incomparablemente más profesional.',
+  '',
+  'Qué significa eso:',
+  '- Subes el registro: vocabulario preciso de negocio, sintaxis firme, cadencia de documento corporativo.',
+  '- Conviertes descripción en compromiso. Una frase de trabajo se vuelve una declaración que la empresa sostiene.',
+  '- Eliminas el tono coloquial, lo tentativo y lo aproximado. Nada de "tratar de", "buscar", "más o menos", "etc.".',
+  '- Voz activa, presente o futuro según corresponda, afirmativo, sin condicionales ni disculpas.',
+  '- Densidad: cada palabra carga peso. Si sobra, se va. Elevar no es alargar ni adornar.',
+  '',
+  'Lo único que NO puedes hacer:',
+  '- Cambiar la idea. Sale la misma decisión, dicha a otro nivel.',
+  '- Agregar hechos, cifras, plazos, nombres o compromisos que no estén ya en el texto original.',
+  '- Quitar algo sustantivo con el pretexto de la síntesis.',
+  '- Caer en el lenguaje corporativo vacío que suena a folleto: "excelencia", "sinergia", "clase mundial",',
+  '  "valor agregado", "liderazgo", "de vanguardia". Eso es lo contrario de escribir como un CEO serio.',
+  '',
+  'Español de México. Sin preámbulo ni comentario: entregas la frase lista para el documento.',
+  'Siempre entregas una versión elevada. Devolver el texto idéntico solo se justifica si ya está exactamente a ese nivel.',
+].join('\n')
 
+const ESQUEMA_REDACCION = {
+  type: 'object',
+  properties: {
+    campos: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          clave: { type: 'string', description: 'la clave exacta del campo, copiada de la lista' },
+          texto: {
+            type: 'string',
+            description:
+              'La misma idea, escrita al nivel de un CEO de empresa trasnacional que cotiza en bolsa. Es lo que se guarda tal cual en el documento.',
+          },
+          cambio: {
+            type: 'string',
+            description:
+              'Qué se elevó, en una frase corta y concreta (por ejemplo: "de descripción operativa a compromiso institucional"). Cadena vacía solo si el texto quedó idéntico.',
+          },
+        },
+        required: ['clave', 'texto', 'cambio'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['campos'],
+  additionalProperties: false,
+} as const
+
+export interface CorreccionIA {
+  texto: string
+  cambio: string
+}
+
+async function corregirLote(lote: Lote): Promise<Map<string, CorreccionIA>> {
   const instruccion = [
-    'EVIDENCIA RECOLECTADA',
-    evidencia(v) || '(todavía no hay nada capturado)',
-    '',
-    `RESPUESTAS QUE NECESITAN OTRA VUELTA — pantalla "${pantalla}"`,
-    ...conTexto.map((d) =>
-      [`- clave: ${d.clave}`, `  pregunta: ${d.pregunta}`, `  respuesta: ${d.respuesta}`].join('\n'),
-    ),
+    `TEXTOS A ELEVAR — bloque "${lote.grupo}"`,
+    ...lote.items.map((it) => [`- clave: ${it.clave}`, `  campo: ${it.pregunta}`, `  texto: ${it.actual}`].join('\n')),
     '',
     'TAREA',
-    'Para cada clave escribe TRES repreguntas sobre esa respuesta en concreto.',
-    'Cada repregunta debe citar o apoyarse en algo que esa respuesta dice: no deben poder aplicarse a ninguna otra respuesta de la lista.',
-    'Si la respuesta contradice lo que dijo otra unidad o el propio CEO en otra parte de la evidencia, una de las tres debe confrontarlo nombrando la fuente.',
-    'Directas, sin rodeos, como las haría un consultor senior en la sala.',
+    'Reescribe cada texto con un lenguaje mucho más profesional, conservando exactamente la misma idea.',
+    'El campo dice qué papel juega ese texto en el documento: úsalo para calibrar el registro, no para agregarle contenido.',
+    'Devuelve exactamente un objeto por clave, con la clave copiada literal.',
+    ...(reglasDeForma(lote).length
+      ? ['', 'FORMA OBLIGATORIA DE LA REDACCIÓN', ...reglasDeForma(lote), 'Si el texto no empieza así, ajústalo.']
+      : []),
   ].join('\n')
 
-  const data = (await llamar(instruccion, ESQUEMA_DUDAS)) as { dudas?: { clave: string; repreguntas: string[] }[] }
-  const salida = new Map<string, string[]>()
-  ;(data.dudas ?? []).forEach((d) => {
-    const limpias = (d?.repreguntas ?? []).map((r) => r.trim()).filter(Boolean)
-    if (d?.clave && limpias.length) salida.set(d.clave, limpias)
+  const data = (await llamar(SISTEMA_REDACCION, instruccion, ESQUEMA_REDACCION)) as {
+    campos?: { clave: string; texto: string; cambio: string }[]
+  }
+  const campos = new Map<string, CorreccionIA>()
+  ;(data.campos ?? []).forEach((c) => {
+    if (c?.clave && c.texto?.trim()) {
+      campos.set(c.clave, { texto: conArranque(c.clave, c.texto), cambio: c.cambio?.trim() ?? '' })
+    }
   })
-  return salida
+  return campos
+}
+
+export interface ResultadoCorreccion {
+  campos: Map<string, CorreccionIA>
+  omitidos: number
+  fallidos: number
+}
+
+/** Reescribe a nivel ejecutivo todo lo que ya tiene texto escrito. */
+export async function corregir(
+  grupos: AnalisisGrupo[],
+  onLote?: (hechos: number, total: number) => void,
+): Promise<ResultadoCorreccion> {
+  const lotes: Lote[] = []
+  grupos.forEach((b) => {
+    // sin texto no hay nada que corregir: no se gasta la llamada
+    const conTexto = b.items.filter((it) => it.actual)
+    for (let i = 0; i < conTexto.length; i += MAX_POR_LOTE) {
+      lotes.push({ grupo: b.label, items: conTexto.slice(i, i + MAX_POR_LOTE) })
+    }
+  })
+
+  const elegidos = lotes.slice(0, MAX_LOTES)
+  const omitidos = lotes.slice(MAX_LOTES).reduce((n, l) => n + l.items.length, 0)
+  if (!elegidos.length) return { campos: new Map(), omitidos: 0, fallidos: 0 }
+
+  let hechos = 0
+  const resultados = await Promise.allSettled(
+    elegidos.map((l) =>
+      corregirLote(l).finally(() => {
+        hechos++
+        onLote?.(hechos, elegidos.length)
+      }),
+    ),
+  )
+
+  const campos = new Map<string, CorreccionIA>()
+  resultados.forEach((r) => {
+    if (r.status === 'fulfilled') r.value.forEach((val, clave) => campos.set(clave, val))
+  })
+
+  const fallidos = resultados.filter((r) => r.status === 'rejected').length
+  if (fallidos === resultados.length) {
+    const primero = resultados.find((r) => r.status === 'rejected') as PromiseRejectedResult
+    throw primero.reason instanceof ErrorIA ? primero.reason : new ErrorIA('No se pudo consultar al modelo.')
+  }
+
+  return { campos, omitidos, fallidos }
 }

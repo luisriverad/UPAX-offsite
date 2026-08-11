@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import { normalizaPdv } from './redaccionPdv'
 import type { HistEntry, Values } from '../types'
 
 const KEY = 'upax_arquitectura_v2'
@@ -10,6 +11,8 @@ interface StoreCtx {
   /** entero guardado en el store; util para contadores de filas */
   num: (k: string, def: number) => number
   set: (k: string, v: string) => void
+  /** escribe varias claves en una sola actualizacion */
+  setMany: (patch: Values) => void
   /** registra una decision aprobada en el historial de versiones */
   logVersion: (bloque: string, texto: string) => void
   hist: HistEntry[]
@@ -23,7 +26,10 @@ const HIST_KEY = '__hist'
 function readLocal(): Values {
   try {
     const raw = localStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw) as Values) : {}
+    const v = raw ? (JSON.parse(raw) as Values) : {}
+    // la Propuesta de Valor tiene arranque obligatorio: lo guardado antes de la
+    // regla se corrige al abrir, no solo lo que se sintetice de aquí en adelante
+    return { ...v, ...normalizaPdv(v) }
   } catch {
     return {}
   }
@@ -63,6 +69,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const setMany = useCallback((patch: Values) => {
+    setValues((prev) => {
+      const entradas = Object.entries(patch).filter(([k, v]) => v && prev[k] !== v)
+      if (entradas.length === 0) return prev
+      return { ...prev, ...Object.fromEntries(entradas) }
+    })
+  }, [])
+
   const hist = useMemo<HistEntry[]>(() => {
     try {
       return values[HIST_KEY] ? (JSON.parse(values[HIST_KEY]) as HistEntry[]) : []
@@ -88,8 +102,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const reset = useCallback(() => setValues({}), [])
 
   const api = useMemo(
-    () => ({ values, get, num, set, hist, logVersion, replaceAll, reset }),
-    [values, get, num, set, hist, logVersion, replaceAll, reset],
+    () => ({ values, get, num, set, setMany, hist, logVersion, replaceAll, reset }),
+    [values, get, num, set, setMany, hist, logVersion, replaceAll, reset],
   )
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

@@ -1,6 +1,5 @@
 import {
   BLOQUES_CEO,
-  BLOQUES_OFFSITE,
   CAMPOS_PROPUESTA,
   DGS,
   GUION,
@@ -10,13 +9,23 @@ import {
 import type { VistaConsolidado } from '../data/content'
 import { ANGULO_CEO, gruposCeo, gruposDgs } from './asistenteEntrevista'
 import type { Grupo } from './asistenteEntrevista'
-import { COND_ROWS_DEFAULT, IND_DEFAULT, IMP_DEFAULT, K, columnas, imperativos, unidadDe } from './model'
+import {
+  COND_ROWS_DEFAULT,
+  IMP_DEFAULT,
+  K,
+  columnas,
+  imperativos,
+  indicadoresDe,
+  letraIndicador,
+  listaDe,
+  listaTexto,
+  unidadDe,
+} from './model'
 import type { Values } from '../types'
 
 /**
- * Traduce cada pantalla a los tramos que el asistente sabe leer. Así las doce
- * pantallas usan el mismo motor que la entrevista con el CEO: cuestionar lo que
- * quedó flojo y proponer borradores con frases que ya se dijeron en el proceso.
+ * Traduce cada pantalla a los tramos que el asistente sabe leer: proponer
+ * borradores con la evidencia ya capturada en el proceso.
  */
 
 const g = (v: Values, k: string) => (v[k] ?? '').trim()
@@ -332,12 +341,53 @@ function gruposPracticas(v: Values): Grupo[] {
   ]
 }
 
-/** 09 · estándares por imperativo, más la tabla de indicadores en campos breves. */
+/** 09 · los cuatro bloques de Negocio: estándares, indicadores, procesos y políticas. */
 function gruposEstandares(v: Values): Grupo[] {
   const cols = columnas(v)
-  const n = int(v, K.indCount, IND_DEFAULT)
   const evidencia = [...consolidado(v, 'neg'), ...ceo(v, 'neg')]
-  const nombreInd = (r: number) => g(v, K.ind(r, 'nombre')) || `Indicador ${String.fromCharCode(65 + r)}`
+
+  // un tramo de indicadores por imperativo: así el asistente sabe qué está midiendo
+  const porImperativo = cols.flatMap((c): Grupo[] => {
+    const inds = indicadoresDe(v, c.i)
+    const nombreInd = (r: number) => inds[r]?.nombre || `Indicador ${letraIndicador(r)}`
+    return [
+      {
+        id: `ind-${c.i}`,
+        label: `Indicadores · ${c.label}`,
+        preguntas: inds.map((x) => `Indicador ${letraIndicador(x.r)}`),
+        clave: (r: number) => K.ind(c.i, r, 'nombre'),
+        angulo: '¿Ese número ya existe hoy o habría que empezar a medirlo?',
+        breve: true,
+        fuentes: [g(v, K.est(c.i)), ...evidencia].filter(Boolean),
+      },
+      {
+        // meta y fuente van juntas: un número sin origen no sirve para decidir
+        id: `ind-meta-${c.i}`,
+        label: `Indicadores · ${c.label} · meta 2027 y fuente`,
+        preguntas: inds.flatMap((x) => [`${nombreInd(x.r)} · meta 2027`, `${nombreInd(x.r)} · fuente del dato`]),
+        clave: (i: number) => (i % 2 === 0 ? K.ind(c.i, i / 2, 'meta') : K.ind(c.i, (i - 1) / 2, 'fuente')),
+        angulo: '¿Quién reporta ese dato y cada cuánto?',
+        breve: true,
+      },
+      {
+        id: `proc-${c.i}`,
+        label: `Procesos críticos · ${c.label}`,
+        preguntas: listaDe(v, 'proc', c.i).map((x) => `Proceso ${x.r + 1}`),
+        clave: (r: number) => K.proc(c.i, r),
+        angulo: '¿Quién es el dueño del proceso y cada cuánto se revisa?',
+        fuentes: [g(v, K.est(c.i)), ...evidencia].filter(Boolean),
+      },
+      {
+        id: `pol-${c.i}`,
+        label: `Políticas · ${c.label}`,
+        preguntas: listaDe(v, 'pol', c.i).map((x) => `Política ${x.r + 1}`),
+        clave: (r: number) => K.pol(c.i, r),
+        angulo: '¿Quién puede autorizar una excepción a esa regla?',
+        fuentes: [listaTexto(v, 'proc', c.i), ...evidencia].filter(Boolean),
+      },
+    ]
+  })
+
   return [
     {
       id: 'est',
@@ -347,75 +397,7 @@ function gruposEstandares(v: Values): Grupo[] {
       angulo: '¿Cómo se verifica que ese estándar se cumple?',
       fuentes: [...porColumna(v, K.prac), ...evidencia],
     },
-    {
-      id: 'ind',
-      label: 'Indicadores críticos',
-      preguntas: Array.from({ length: n }, (_, r) => `Indicador ${String.fromCharCode(65 + r)}`),
-      clave: (r: number) => K.ind(r, 'nombre'),
-      angulo: '¿Ese número ya existe hoy o habría que empezar a medirlo?',
-      breve: true,
-      fuentes: evidencia,
-    },
-    {
-      // meta y fuente van juntas: un número sin origen no sirve para decidir
-      id: 'ind-meta',
-      label: 'Indicadores · meta 2027 y fuente',
-      preguntas: Array.from({ length: n * 2 }, (_, i) =>
-        i % 2 === 0 ? `${nombreInd(i / 2)} · meta 2027` : `${nombreInd((i - 1) / 2)} · fuente del dato`,
-      ),
-      clave: (i: number) =>
-        i % 2 === 0 ? K.ind(i / 2, 'meta') : K.ind((i - 1) / 2, 'fuente'),
-      angulo: '¿Quién reporta ese dato y cada cuánto?',
-      breve: true,
-    },
-  ]
-}
-
-/** 10 · el proceso nace del estándar y la política del proceso que la sostiene. */
-function gruposProcesos(v: Values): Grupo[] {
-  const cols = columnas(v)
-  const evidencia = [...consolidado(v, 'neg'), ...ceo(v, 'neg'), ...ceo(v, 'imp')]
-  return [
-    {
-      id: 'proc',
-      label: 'Procesos críticos',
-      preguntas: cols.map((c) => c.label),
-      clave: (i: number) => K.proc(cols[i].i),
-      angulo: '¿Quién es el dueño del proceso y cada cuánto se revisa?',
-      fuentes: [...porColumna(v, K.est), ...evidencia],
-    },
-    {
-      id: 'pol',
-      label: 'Políticas',
-      preguntas: cols.map((c) => c.label),
-      clave: (i: number) => K.pol(cols[i].i),
-      angulo: '¿Quién puede autorizar una excepción a esa regla?',
-      fuentes: [...porColumna(v, K.proc), ...evidencia],
-    },
-  ]
-}
-
-/** 11 · lo que se decide en vivo: versión preliminar y su alternativa. */
-function gruposOffsite(v: Values): Grupo[] {
-  const etiquetas = BLOQUES_OFFSITE.map((b) => capitaliza(b.label))
-  const evidencia = [...consolidado(v, 'pdv'), ...ceo(v, 'pdv'), ...dgsBloque(v, 'pdv')]
-  return [
-    {
-      id: 'off',
-      label: 'Versiones preliminares',
-      preguntas: etiquetas,
-      clave: (i: number) => BLOQUES_OFFSITE[i].src,
-      angulo: '¿El grupo la aprobaría hoy tal como está escrita?',
-      fuentes: evidencia,
-    },
-    {
-      id: 'off-alt',
-      label: 'Alternativas · Opción B',
-      preguntas: etiquetas,
-      clave: (i: number) => K.pdvAlt(BLOQUES_OFFSITE[i].id),
-      angulo: '¿En qué se diferencia realmente de la versión preliminar?',
-      fuentes: evidencia,
-    },
+    ...porImperativo,
   ]
 }
 
@@ -423,36 +405,41 @@ function gruposOffsite(v: Values): Grupo[] {
  * Despachador
  * ------------------------------------------------------------------ */
 
+/**
+ * Los dos oficios del asistente, que no son intercambiables:
+ * `sintesis` lee la evidencia cruda y propone qué debe decir el documento;
+ * `redaccion` ya no discute el contenido, solo deja bien escrito lo decidido.
+ */
+export type ModoAsistente = 'sintesis' | 'redaccion'
+
 export interface AsistenteDePantalla {
   grupos: Grupo[]
   /** cómo se nombra, en el panel, aquello que el asistente está leyendo */
   fuente: string
+  modo: ModoAsistente
 }
 
 export function asistenteDePantalla(id: string, v: Values): AsistenteDePantalla {
   switch (id) {
     case 's02':
-      return { grupos: gruposCeo(), fuente: 'la entrevista con el CEO' }
+      return { grupos: gruposCeo(), fuente: 'la entrevista con el CEO', modo: 'sintesis' }
     case 's03':
-      return { grupos: gruposDgs(), fuente: 'las entrevistas con los DGs' }
+      return { grupos: gruposDgs(), fuente: 'las entrevistas con los DGs', modo: 'sintesis' }
     case 's04':
-      return { grupos: gruposConsolidado(v), fuente: 'el consolidado de evidencia' }
+      return { grupos: gruposConsolidado(v), fuente: 'el consolidado de evidencia', modo: 'sintesis' }
     case 's05':
-      return { grupos: gruposPropuesta(v), fuente: 'la Propuesta de Valor' }
+      return { grupos: gruposPropuesta(v), fuente: 'la Propuesta de Valor', modo: 'sintesis' }
     case 's06':
-      return { grupos: gruposImperativos(v), fuente: 'los imperativos estratégicos' }
+      return { grupos: gruposImperativos(v), fuente: 'los imperativos estratégicos', modo: 'sintesis' }
     case 's07':
-      return { grupos: gruposConductas(v), fuente: 'la cuadrícula de comportamientos' }
+      return { grupos: gruposConductas(v), fuente: 'la cuadrícula de comportamientos', modo: 'sintesis' }
     case 's08':
-      return { grupos: gruposPracticas(v), fuente: 'prácticas y mecanismos' }
+      return { grupos: gruposPracticas(v), fuente: 'prácticas y mecanismos', modo: 'sintesis' }
     case 's09':
-      return { grupos: gruposEstandares(v), fuente: 'estándares e indicadores' }
-    case 's10':
-      return { grupos: gruposProcesos(v), fuente: 'procesos y políticas' }
-    case 's11':
-      return { grupos: gruposOffsite(v), fuente: 'las definiciones del Off-Site' }
+      return { grupos: gruposEstandares(v), fuente: 'los cuatro bloques de Negocio', modo: 'sintesis' }
     case 's12':
-      // la pantalla de cierre revisa los nueve bloques del Excel de corrido
+      // la pantalla de cierre no vuelve a decidir nada: recorre los nueve bloques
+      // del Excel ya resueltos y solo revisa cómo están escritos
       return {
         grupos: [
           ...gruposPropuesta(v),
@@ -460,11 +447,11 @@ export function asistenteDePantalla(id: string, v: Values): AsistenteDePantalla 
           ...gruposConductas(v),
           ...gruposPracticas(v),
           ...gruposEstandares(v),
-          ...gruposProcesos(v),
         ],
         fuente: 'toda la arquitectura',
+        modo: 'redaccion',
       }
     default:
-      return { grupos: [], fuente: 'esta pantalla' }
+      return { grupos: [], fuente: 'esta pantalla', modo: 'sintesis' }
   }
 }

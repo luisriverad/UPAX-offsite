@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CAMPOS_PROPUESTA } from '../../data/content'
 import { K, archivosCargados, respuestasCeo, respuestasDG } from '../../lib/model'
+import { MOLDES_PDV } from '../../lib/redaccionPdv'
 import { useStore } from '../../lib/store'
 import { Chip, Field, Foot } from '../ui'
 import type { ScreenProps } from './tipos'
@@ -19,6 +20,8 @@ export default function S05Propuesta({ screen }: ScreenProps) {
           const texto = get(K.pdv(c.id))
           const estado = get(K.pdvEstado(c.id))
           const editando = abierto === c.id
+          // mientras nadie lo toque, lo que se ve es la síntesis que dejó el Pre-evento
+          const heredado = Boolean(texto) && texto === get(K.cons('pdv', c.id))
           return (
             <article key={c.id} className={`tarjeta ${c.destacado ? 'destacada' : ''}`}>
               <Chip tone={c.destacado ? 'naranja' : 'gris'}>{c.tag}</Chip>
@@ -32,10 +35,16 @@ export default function S05Propuesta({ screen }: ScreenProps) {
                 {respuestas} respuestas · {archivos} archivos
               </p>
               <p className={`tarjeta-estado ${c.destacado ? 'naranja' : ''}`}>
-                {estado === 'aprobado' ? 'Aprobada en Off-Site' : 'Borrador editable'}
+                {estado === 'aprobado'
+                  ? 'Aprobada en Off-Site'
+                  : heredado
+                    ? 'Heredado del Consolidado · editable'
+                    : 'Borrador editable'}
               </p>
 
-              {editando && <Field k={K.pdv(c.id)} placeholder="Escribe la definición…" rows={3} />}
+              {editando && (
+                <Field k={K.pdv(c.id)} placeholder={MOLDES_PDV[c.id]?.placeholder ?? 'Escribe la definición…'} rows={3} />
+              )}
 
               <button type="button" className="btn btn-ghost" onClick={() => setAbierto(editando ? null : c.id)}>
                 {editando ? 'Cerrar' : 'Abrir y editar'}

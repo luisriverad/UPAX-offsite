@@ -7,7 +7,6 @@ export type TabId =
   | 'imperativos'
   | 'cultura'
   | 'negocio'
-  | 'offsite'
   | 'final'
 
 /**

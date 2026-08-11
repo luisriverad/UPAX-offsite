@@ -114,11 +114,11 @@ export const BLOQUE_UNIDAD: BloqueEntrevista = {
   id: 'uni',
   label: 'Tu unidad',
   preguntas: [
-    '¿Cuál es el propósito principal de tu unidad dentro de UPAX?',
-    '¿Qué resultado concreto recibe el cliente gracias a tu unidad?',
-    'Pensando en UPAX como grupo, ¿qué debería poder prometerle a cualquier cliente y cumplir siempre?',
-    '¿Cuáles son las 3 cosas que UPAX debe hacer especialmente bien para alcanzar sus objetivos hacia 2027?',
-    'En el día a día, ¿qué comportamientos, prácticas o reglas ayudan a lograr resultados y cuáles los dificultan?',
+    '¿Qué papel juega tu unidad dentro de UPAX y cuál es su principal contribución al grupo?',
+    '¿Qué resultado concreto entrega tu unidad a sus clientes, internos o externos?',
+    '¿Qué hace especialmente bien tu unidad hoy que UPAX debería preservar o aprovechar?',
+    '¿Cuál es hoy el principal obstáculo que limita el crecimiento o desempeño de tu unidad rumbo a 2027?',
+    '¿Qué necesitas de UPAX corporativo o de las demás unidades para que tu unidad pueda lograr mejores resultados?',
   ],
 }
 
@@ -263,24 +263,8 @@ export const CAMPOS_PROPUESTA: CampoPropuesta[] = [
   {
     id: 'puente',
     tag: 'FRASE PUENTE',
-    titulo: 'Para lograrlo, debemos…',
+    titulo: 'Para ello, haremos…',
     hint: 'La frase que conecta la promesa con los imperativos.',
   },
 ]
 
-/* ------------------------------------------------------------------ *
- * Pantalla 11 · bloques que se deciden en el Off-Site
- * ------------------------------------------------------------------ */
-
-export interface BloqueOffsite {
-  id: string
-  label: string
-  /** clave del texto en el store */
-  src: string
-}
-
-export const BLOQUES_OFFSITE: BloqueOffsite[] = [
-  { id: 'existimos', label: 'PARA QUÉ EXISTIMOS', src: 'pdv.existimos' },
-  { id: 'promesa', label: 'PROMESA', src: 'pdv.promesa' },
-  { id: 'puente', label: 'FRASE PUENTE', src: 'pdv.puente' },
-]

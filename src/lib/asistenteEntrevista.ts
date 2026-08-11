@@ -1,5 +1,6 @@
 import { BLOQUES_CEO, GUION_DG, UNIDADES } from '../data/content'
-import { K, recorta } from './model'
+import { K } from './model'
+import { conArranque } from './redaccionPdv'
 import type { Values } from '../types'
 
 /**
@@ -10,8 +11,6 @@ import type { Values } from '../types'
  */
 
 const g = (v: Values, k: string) => (v[k] ?? '').trim()
-
-const normaliza = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 /** Un tramo capturable: un bloque del CEO, el guion de un DG o una columna del Excel. */
 export interface Grupo {
@@ -70,166 +69,8 @@ export function gruposDgs(): Grupo[] {
   }))
 }
 
-/** Palabras que suenan bien y no dicen nada por sí solas. */
-const PALABRAS_VAGAS = [
-  'calidad',
-  'excelencia',
-  'valor agregado',
-  'innovacion',
-  'liderazgo',
-  'compromiso',
-  'sinergia',
-  'pasion',
-  'integral',
-  'soluciones',
-  'profesionalismo',
-  'eficiencia',
-  'vanguardia',
-  'mejores practicas',
-  'clase mundial',
-  'transformacion',
-]
-
-/* ------------------------------------------------------------------ *
- * Cuestionar: repreguntar donde la respuesta no quedó firme
- * ------------------------------------------------------------------ */
-
-export type Motivo = 'vacia' | 'corta' | 'generica' | 'lista'
-
-export interface Repregunta {
-  clave: string
-  grupoLabel: string
-  numero: number
-  pregunta: string
-  motivo: Motivo
-  /** lo que quedó escrito en la respuesta, para releerlo al repreguntar */
-  respuesta: string
-  repreguntas: string[]
-}
-
-export interface ResultadoCuestionar {
-  dudas: Repregunta[]
-  /** tramos sin una sola respuesta: se resumen en vez de listarse pregunta por pregunta */
-  sinEmpezar: string[]
-  revisadas: number
-}
-
 function palabras(t: string): string[] {
   return t.split(/\s+/).filter(Boolean)
-}
-
-/**
- * Detecta por qué una respuesta no sirve todavía. `null` = está firme.
- * A un campo `breve` (nombre corto, indicador, meta) se le pide mucho menos:
- * ahí lo largo es defecto, no virtud.
- */
-function diagnostico(texto: string, breve = false): Motivo | null {
-  if (!texto) return 'vacia'
-
-  const p = palabras(texto)
-  if (p.length < (breve ? 2 : 8)) return 'corta'
-
-  const t = normaliza(texto)
-  const vaga = PALABRAS_VAGAS.some((x) => t.includes(x))
-  // un dato, un ejemplo o una respuesta larga ya la aterrizan
-  const aterrizada = /\d/.test(texto) || p.length > 45 || t.includes('por ejemplo')
-  if (vaga && !aterrizada) return 'generica'
-
-  if (breve) return null
-
-  const comas = (texto.match(/,/g) || []).length
-  if (comas >= 3 && p.length < 20) return 'lista'
-
-  return null
-}
-
-/**
- * Cinco repreguntas por motivo, no dos: a cada duda le tocan dos y se va
- * rotando, así una entrevista con varias respuestas flojas no devuelve el mismo
- * par una y otra vez. Cinco es impar a propósito: con paso de dos, el par
- * tarda cinco dudas en repetirse.
- */
-const REPREGUNTAS: Record<Motivo, string[]> = {
-  vacia: [
-    '¿Qué contestarías hoy, aunque sea en borrador?',
-    '¿Qué te impide contestarla: falta información o falta decisión?',
-    '¿Quién dentro de UPAX sí tendría la respuesta?',
-    'Si tuvieras que decidirlo mañana, ¿por dónde empezarías?',
-    '¿No aplica, o simplemente todavía no se ha discutido?',
-  ],
-  corta: [
-    '¿Puedes dar un ejemplo concreto de la última vez que pasó?',
-    '¿Cómo se notaría esto para un cliente, en la práctica?',
-    '¿Quién tendría que hacer algo distinto para que esto sea cierto?',
-    '¿Qué hay detrás de esa frase que todavía no está escrito?',
-    '¿Con qué lo compararías para que se entienda mejor?',
-  ],
-  generica: [
-    'Esa palabra la diría cualquier competidor. ¿Qué hace UPAX que ellos no?',
-    '¿Cómo se ve eso un martes cualquiera, en una operación real?',
-    'Si quitamos esa palabra, ¿qué queda de la idea?',
-    '¿Qué tendría que pasar para que dejara de ser cierto?',
-    '¿Cómo lo demostrarías ante un cliente que no te cree?',
-  ],
-  lista: [
-    'Enumeraste varios conceptos. Si solo pudieras conservar uno, ¿cuál?',
-    '¿Cuál de esos falla más seguido hoy?',
-    '¿Están en orden de importancia o los dijiste como fueron saliendo?',
-    '¿Alguno de esos es consecuencia de otro?',
-    '¿Cuál costaría más trabajo sostener en todas las unidades?',
-  ],
-}
-
-export function cuestionar(v: Values, grupos: Grupo[]): ResultadoCuestionar {
-  const dudas: Repregunta[] = []
-  const sinEmpezar: string[] = []
-  let revisadas = 0
-  // cuántas dudas de cada motivo llevamos, para ir rotando el par de repreguntas
-  const turno: Record<Motivo, number> = { vacia: 0, corta: 0, generica: 0, lista: 0 }
-
-  grupos.forEach((gr) => {
-    const respuestas = gr.preguntas.map((_, i) => g(v, gr.clave(i)))
-    revisadas += respuestas.filter(Boolean).length
-
-    // un tramo intacto no da para repreguntar: se reporta de una línea
-    if (respuestas.every((r) => !r)) {
-      sinEmpezar.push(gr.label)
-      return
-    }
-
-    // el ángulo es del bloque entero: repetirlo en cada pregunta es ruido, va solo en la primera
-    let anguloPendiente = Boolean(gr.angulo)
-
-    gr.preguntas.forEach((pregunta, i) => {
-      const motivo = diagnostico(respuestas[i], gr.breve)
-      if (!motivo) return
-
-      // se recorren pares distintos, no la lista de dos en dos: cinco repreguntas
-      // dan veinte combinaciones, de sobra para una entrevista completa
-      const pool = REPREGUNTAS[motivo]
-      const n = pool.length
-      const t = turno[motivo]++
-      const a = t % n
-      const b = (a + 1 + Math.floor(t / n)) % n
-      const repreguntas = [pool[a], pool[b === a ? (a + 1) % n : b]]
-      if (anguloPendiente) {
-        repreguntas.push(gr.angulo)
-        anguloPendiente = false
-      }
-
-      dudas.push({
-        clave: gr.clave(i),
-        grupoLabel: gr.label,
-        numero: i + 1,
-        pregunta,
-        motivo,
-        respuesta: recorta(respuestas[i], 160),
-        repreguntas,
-      })
-    })
-  })
-
-  return { dudas, sinEmpezar, revisadas }
 }
 
 /* ------------------------------------------------------------------ *
@@ -317,7 +158,8 @@ export function analizar(v: Values, grupos: Grupo[]): AnalisisGrupo[] {
         clave: gr.clave(i),
         numero: i + 1,
         pregunta: gr.preguntas[i],
-        propuesta: fuente ? (gr.breve ? resumeBreve(fuente) : fuente) : '',
+        // la Propuesta de Valor lleva arranque fijo, venga de donde venga el borrador
+        propuesta: fuente ? conArranque(gr.clave(i), gr.breve ? resumeBreve(fuente) : fuente) : '',
         actual: r,
         base: meta?.base || undefined,
         tension: meta?.tension || undefined,

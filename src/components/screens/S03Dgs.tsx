@@ -37,24 +37,17 @@ export default function S03Dgs() {
         />
       </header>
 
+      {/* la unidad ya la dice la pestaña de arriba; aquí solo va quién contesta */}
       <div className="identidad">
-        <label>
-          <span>Unidad de negocio</span>
-          <Line k={K.dgUnidad(dg)} placeholder={unidadDe(values, dg)} />
-        </label>
         <label>
           <span>Entrevistado</span>
           <Line k={K.dgPersona(dg)} placeholder="Nombre y puesto de quien contesta" />
         </label>
       </div>
 
-      {/* el PDF lleva los dos bloques de la unidad: el guion compartido y el propio */}
-      <PdfEntrevista key={dg} dest={{ tipo: 'dg', id: dg }} />
-
       <div className="tres dgs">
         <div className="caja">
-          <header className="caja-h">
-            <span className="panel-t">MISMO GUION QUE EL CEO</span>
+          <header className="caja-h solo-conteo">
             <span className="muted">
               {respuestasDeDG(values, dg, bloque.id)} de {bloque.preguntas.length} respondidas
             </span>
@@ -128,6 +121,9 @@ export default function S03Dgs() {
           {revision && <Diagnostico revision={revision} />}
         </div>
       </div>
+
+      {/* el PDF lleva los dos bloques de la unidad: el guion compartido y el propio */}
+      <PdfEntrevista key={dg} dest={{ tipo: 'dg', id: dg }} />
     </section>
   )
 }

@@ -1,25 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
-import { analizar, cuestionar } from '../lib/asistenteEntrevista'
-import type { AnalisisGrupo, ResultadoCuestionar } from '../lib/asistenteEntrevista'
+import { analizar } from '../lib/asistenteEntrevista'
+import type { AnalisisGrupo } from '../lib/asistenteEntrevista'
 import { asistenteDePantalla } from '../lib/asistentePantalla'
+import { hayQueCorregir, revisarRedaccion } from '../lib/correccion'
 import { UNIDADES } from '../data/content'
-import { ErrorIA, hayEvidencia, repreguntar, sintetizar } from '../lib/ia'
+import { ErrorIA, corregir, hayEvidencia, sintetizar } from '../lib/ia'
+import RedaccionFinal from './RedaccionFinal'
 import { useStore } from '../lib/store'
 import type { ScreenMeta } from '../types'
 import { Chip } from './ui'
 
-type Modo = 'cuestionar' | 'analizar' | null
-
 /**
- * Panel derecho de todas las pantallas. Trabaja en dos tiempos: el motor local
- * responde al instante sobre lo capturado, y si hay llave configurada el modelo
- * reescribe encima con una síntesis de toda la evidencia. Si el modelo falla,
- * lo local se queda en pantalla y el aviso explica por qué.
+ * Panel derecho. Siempre trabaja en dos tiempos —el motor local responde al
+ * instante y el modelo reescribe encima si hay llave—, pero hace dos oficios
+ * distintos según la pantalla: en Pre-evento sintetiza la evidencia para decidir
+ * qué dice el documento; en Final ya no discute contenido y solo corrige cómo
+ * está escrito. Son cosas distintas y no comparten ni prompt ni botón.
  */
 export default function Asistente({ screen }: { screen: ScreenMeta }) {
   const { values, set } = useStore()
-  const [modo, setModo] = useState<Modo>(null)
-  const [dudas, setDudas] = useState<ResultadoCuestionar | null>(null)
+  const [modo, setModo] = useState<'analizar' | null>(null)
   const [analisis, setAnalisis] = useState<AnalisisGrupo[]>([])
   const [insertados, setInsertados] = useState<string[]>([])
   const [pensando, setPensando] = useState(false)
@@ -29,6 +29,8 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
   const [fallidos, setFallidos] = useState(0)
   const [lotes, setLotes] = useState({ hechos: 0, total: 0 })
   const [seg, setSeg] = useState(0)
+  // en Final el resultado no cabe en la columna: se abre enfrentado al original
+  const [verRedaccion, setVerRedaccion] = useState(false)
 
   // la llamada tarda decenas de segundos: sin contador el panel parece colgado
   useEffect(() => {
@@ -38,17 +40,18 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
     return () => clearInterval(t)
   }, [pensando])
 
-  const { grupos, fuente } = useMemo(() => asistenteDePantalla(screen.id, values), [screen.id, values])
+  const { grupos, fuente, modo: oficio } = useMemo(() => asistenteDePantalla(screen.id, values), [screen.id, values])
+  const corrigiendo = oficio === 'redaccion'
 
   // cada pantalla arranca con el panel limpio
   useEffect(() => {
     setModo(null)
-    setDudas(null)
     setAnalisis([])
     setInsertados([])
     setPensando(false)
     setAvisoIA('')
     setConIA(false)
+    setVerRedaccion(false)
   }, [screen.id])
 
   function limpiar() {
@@ -60,7 +63,8 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
     setInsertados([])
   }
 
-  async function correrAnalizar() {
+  /** Pre-evento: leer la evidencia y proponer qué debe decir cada campo. */
+  async function correrSintetizar() {
     const local = analizar(values, grupos)
     setAnalisis(local)
     setModo('analizar')
@@ -93,21 +97,31 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
     }
   }
 
-  async function correrCuestionar() {
-    const local = cuestionar(values, grupos)
-    setDudas(local)
-    setModo('cuestionar')
+  /** Final: el contenido ya está decidido; solo se revisa cómo está escrito. */
+  async function correrCorregir() {
+    const local = revisarRedaccion(values, grupos)
+    setAnalisis(local)
+    setModo('analizar')
+    setVerRedaccion(true)
     limpiar()
-    if (!local.dudas.length || !hayEvidencia(values)) return
+    if (!hayQueCorregir(local)) return
 
     setPensando(true)
+    setLotes({ hechos: 0, total: 0 })
     try {
-      const ia = await repreguntar(values, screen.title, local.dudas)
-      if (ia.size === 0) throw new ErrorIA('El modelo no devolvió repreguntas utilizables.')
-      setDudas({
-        ...local,
-        dudas: local.dudas.map((d) => ({ ...d, repreguntas: ia.get(d.clave) ?? d.repreguntas })),
-      })
+      const { campos, omitidos, fallidos } = await corregir(local, (hechos, total) => setLotes({ hechos, total }))
+      if (campos.size === 0) throw new ErrorIA('El modelo no devolvió ninguna corrección utilizable.')
+      setFallidos(fallidos)
+      setAnalisis(
+        local.map((b) => ({
+          ...b,
+          items: b.items.map((it) => {
+            const c = campos.get(it.clave)
+            return c ? { ...it, propuesta: c.texto, base: c.cambio } : it
+          }),
+        })),
+      )
+      setOmitidos(omitidos)
       setConIA(true)
     } catch (e) {
       setAvisoIA(e instanceof ErrorIA ? e.message : 'No se pudo consultar al modelo.')
@@ -119,68 +133,41 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
   return (
     <aside className="asis">
       <Chip tone="violeta">ASISTENTE</Chip>
-      <p className="asis-sub">Trabaja sobre lo que se capturó en {fuente}.</p>
+      {!corrigiendo && <p className="asis-sub">Trabaja sobre lo que se capturó en {fuente}.</p>}
 
       <div className="asis-btns">
-        <button type="button" className="btn btn-ghost" disabled={pensando} onClick={correrCuestionar}>
-          Cuestionar
-        </button>
-        <button type="button" className="btn btn-orange" disabled={pensando} onClick={correrAnalizar}>
-          {pensando ? 'Analizando…' : 'Analizar'}
+        <button
+          type="button"
+          className="btn btn-orange"
+          disabled={pensando}
+          onClick={corrigiendo ? correrCorregir : correrSintetizar}
+        >
+          {pensando ? (corrigiendo ? 'Reescribiendo…' : 'Analizando…') : corrigiendo ? 'REDACCIÓN FINAL' : 'Analizar'}
         </button>
       </div>
 
+      {corrigiendo && modo && !verRedaccion && (
+        <button type="button" className="btn btn-ghost asis-reabrir" onClick={() => setVerRedaccion(true)}>
+          Ver la comparación
+        </button>
+      )}
+
       {/* de dónde salió lo que se está viendo: importa para saber cuánto confiar */}
-      {modo && (pensando || conIA || avisoIA) && (
+      {!corrigiendo && modo && (pensando || conIA || avisoIA) && (
         <p className={`asis-origen ${avisoIA ? 'err' : conIA ? 'ia' : ''}`}>
           {pensando
-            ? `Borrador local abajo. El consultor lee la evidencia del CEO y las ${UNIDADES.length} unidades… ${
+            ? `${corrigiendo ? 'Texto actual abajo. El redactor lo está reescribiendo a nivel ejecutivo' : `Borrador local abajo. El consultor lee la evidencia del CEO y las ${UNIDADES.length} unidades`}… ${
                 lotes.total > 0 ? `${lotes.hechos} de ${lotes.total} bloques · ` : ''
               }${seg}s`
             : conIA
-              ? `Redactado por el modelo sobre toda la evidencia.${
-                  fallidos > 0 ? ` ${fallidos} ${fallidos === 1 ? 'bloque falló' : 'bloques fallaron'} y quedaron en borrador local.` : ''
-                }${omitidos > 0 ? ` No alcanzó para ${omitidos} campos: vuelve a pulsar Analizar para los que falten.` : ''}`
-              : `${avisoIA} Se muestra el análisis local.`}
+              ? `${corrigiendo ? 'Reescrito a nivel ejecutivo, con la misma idea.' : 'Redactado por el modelo sobre toda la evidencia.'}${
+                  fallidos > 0 ? ` ${fallidos} ${fallidos === 1 ? 'bloque falló' : 'bloques fallaron'} y quedaron sin reescribir.` : ''
+                }${omitidos > 0 ? ` No alcanzó para ${omitidos} campos: vuelve a pulsar el botón para los que falten.` : ''}`
+              : `${avisoIA} ${corrigiendo ? 'Sin el modelo no hay reescritura: abajo va el texto tal como está.' : 'Se muestra el análisis local.'}`}
         </p>
       )}
 
-      {modo === 'cuestionar' && dudas && (
-        <div className="asis-out">
-          {dudas.revisadas === 0 ? (
-            <p className="asis-motivo">Todavía no hay ninguna respuesta que revisar.</p>
-          ) : dudas.dudas.length === 0 ? (
-            <p className="asis-ok">Lo capturado está completo y concreto. No hay nada que repreguntar.</p>
-          ) : (
-            <>
-              <p className="asis-lead">
-                {dudas.dudas.length} {dudas.dudas.length === 1 ? 'respuesta necesita' : 'respuestas necesitan'} otra
-                vuelta.
-              </p>
-              {dudas.dudas.map((d) => (
-                <section key={d.clave} className="asis-item">
-                  <h5>
-                    {d.grupoLabel} · pregunta {d.numero}
-                  </h5>
-                  <p className={d.respuesta ? 'asis-cita' : 'asis-motivo'}>
-                    {d.respuesta ? `“${d.respuesta}”` : 'Sin responder'}
-                  </p>
-                  <ul>
-                    {d.repreguntas.map((r) => (
-                      <li key={r}>{r}</li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </>
-          )}
-          {dudas.sinEmpezar.length > 0 && (
-            <p className="asis-nota-pie">Sin empezar: {dudas.sinEmpezar.join(', ')}.</p>
-          )}
-        </div>
-      )}
-
-      {modo === 'analizar' && (
+      {modo === 'analizar' && !corrigiendo && (
         <div className="asis-out">
           {analisis.map((b) => (
             <section key={b.id} className="asis-item">
@@ -241,6 +228,28 @@ export default function Asistente({ screen }: { screen: ScreenMeta }) {
           ))}
         </div>
       )}
+      <RedaccionFinal
+        abierto={corrigiendo && verRedaccion}
+        bloques={analisis}
+        pensando={pensando}
+        aviso={avisoIA && `${avisoIA} Sin el modelo no hay reescritura: abajo va el texto tal como está.`}
+        progreso={`Reescribiendo a nivel ejecutivo… ${
+          lotes.total > 0 ? `${lotes.hechos} de ${lotes.total} bloques · ` : ''
+        }${seg}s`}
+        insertados={insertados}
+        onAplicar={(clave, texto) => {
+          set(clave, texto)
+          setInsertados((prev) => [...prev, clave])
+        }}
+        onAplicarTodo={() => {
+          const nuevos = analisis
+            .flatMap((b) => b.items)
+            .filter((it) => it.propuesta && it.propuesta !== it.actual && !insertados.includes(it.clave))
+          nuevos.forEach((it) => set(it.clave, it.propuesta))
+          setInsertados((prev) => [...prev, ...nuevos.map((it) => it.clave)])
+        }}
+        onClose={() => setVerRedaccion(false)}
+      />
     </aside>
   )
 }

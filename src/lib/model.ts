@@ -25,10 +25,14 @@ export const K = {
   mec: (col: number) => `cul.mec.${col}`,
 
   est: (col: number) => `neg.est.${col}`,
-  proc: (col: number) => `neg.proc.${col}`,
-  pol: (col: number) => `neg.pol.${col}`,
-  indCount: 'neg.ind.count',
-  ind: (r: number, campo: 'nombre' | 'actual' | 'meta' | 'fuente') => `neg.ind.${r}.${campo}`,
+  // procesos y políticas se capturan renglón por renglón, como los indicadores
+  proc: (col: number, r: number) => `neg.proc.${col}.${r}`,
+  procCount: (col: number) => `neg.proc.${col}.count`,
+  pol: (col: number, r: number) => `neg.pol.${col}.${r}`,
+  polCount: (col: number) => `neg.pol.${col}.count`,
+  // los indicadores cuelgan de su imperativo: cada uno tiene los suyos
+  indCount: (col: number) => `neg.ind.${col}.count`,
+  ind: (col: number, r: number, campo: 'nombre' | 'actual' | 'meta' | 'fuente') => `neg.ind.${col}.${r}.${campo}`,
 
   // el prefijo `cec.` se conserva para no perder lo ya capturado
   ceo: (bloque: string, q: number) => `cec.${bloque}.${q}`,
@@ -48,8 +52,8 @@ export const K = {
 export const IMP_DEFAULT = 5
 export const COND_ROWS_DEFAULT = 3
 export const IND_DEFAULT = 3
-/** minimo de columnas que muestran las cuadriculas de Cultura y Negocio */
-const MIN_COLS = 3
+/** renglones que arrancan visibles en procesos críticos y políticas */
+export const LISTA_DEFAULT = 3
 
 const g = (v: Values, k: string) => (v[k] ?? '').trim()
 const int = (v: Values, k: string, def: number) => {
@@ -76,23 +80,72 @@ export function imperativos(v: Values): Imperativo[] {
   }))
 }
 
-/**
- * Columnas de Cultura y Negocio. Mientras no haya imperativos escritos se
- * muestran tres columnas placeholder, como en el diseno funcional.
- */
-export function columnas(v: Values): { i: number; label: string; nombrado: boolean }[] {
-  const imps = imperativos(v)
-  let last = -1
-  imps.forEach((im) => {
-    if (im.nombre) last = im.i
-  })
-  const n = Math.max(MIN_COLS, last + 1)
-  return Array.from({ length: n }, (_, i) => ({
-    i,
-    label: imps[i]?.nombre || `IMPERATIVO ${i + 1}`,
-    nombrado: Boolean(imps[i]?.nombre),
-  }))
+export interface Columna {
+  i: number
+  /** el ordinal, que se queda aunque el imperativo no tenga nombre */
+  ordinal: string
+  /** lo que se capturó en la 06, para colgarlo del ordinal */
+  texto: string
+  /** una sola cadena que identifica la columna: para exportar y para el asistente */
+  label: string
+  nombrado: boolean
 }
+
+/**
+ * Columnas de Cultura y Negocio: una por imperativo definido en la 06, con lo
+ * que se haya escrito allá. Sin nombres todavía se muestran igual, numeradas.
+ */
+export function columnas(v: Values): Columna[] {
+  return imperativos(v).map((im) => {
+    const ordinal = `IMPERATIVO ${im.i + 1}`
+    // el corto es el que cabe en un encabezado; el nombre completo manda al exportar
+    const texto = im.corto || im.nombre
+    return { i: im.i, ordinal, texto, label: im.nombre || im.corto || ordinal, nombrado: Boolean(texto) }
+  })
+}
+
+export interface Indicador {
+  r: number
+  nombre: string
+  actual: string
+  meta: string
+  fuente: string
+}
+
+/** Los indicadores de un imperativo, en orden. `soloConNombre` deja fuera los renglones vacíos. */
+export function indicadoresDe(v: Values, col: number, soloConNombre = false): Indicador[] {
+  const n = int(v, K.indCount(col), IND_DEFAULT)
+  const filas = Array.from({ length: n }, (_, r) => ({
+    r,
+    nombre: g(v, K.ind(col, r, 'nombre')),
+    actual: g(v, K.ind(col, r, 'actual')),
+    meta: g(v, K.ind(col, r, 'meta')),
+    fuente: g(v, K.ind(col, r, 'fuente')),
+  }))
+  return soloConNombre ? filas.filter((x) => x.nombre) : filas
+}
+
+/** Etiqueta por defecto de un indicador: A, B, C… dentro de su imperativo. */
+export const letraIndicador = (r: number) => String.fromCharCode(65 + (r % 26))
+
+export interface Renglon {
+  r: number
+  texto: string
+}
+
+/** Procesos críticos o políticas de un imperativo, como lista de renglones. */
+export function listaDe(v: Values, cual: 'proc' | 'pol', col: number, soloConTexto = false): Renglon[] {
+  const n = int(v, cual === 'proc' ? K.procCount(col) : K.polCount(col), LISTA_DEFAULT)
+  const clave = cual === 'proc' ? K.proc : K.pol
+  const filas = Array.from({ length: n }, (_, r) => ({ r, texto: g(v, clave(col, r)) }))
+  return soloConTexto ? filas.filter((x) => x.texto) : filas
+}
+
+/** Lo capturado en una lista, de corrido: para el documento y el CSV. */
+export const listaTexto = (v: Values, cual: 'proc' | 'pol', col: number) =>
+  listaDe(v, cual, col, true)
+    .map((x) => x.texto)
+    .join(' · ')
 
 /* ------------------------------------------------------------------ *
  * Avance por bloque del Excel
@@ -101,6 +154,11 @@ export function columnas(v: Values): { i: number; label: string; nombrado: boole
 function contarCols(v: Values, key: (col: number) => string): Conteo {
   const cols = columnas(v)
   return { filled: cols.filter((c) => g(v, key(c.i))).length, total: cols.length }
+}
+
+function contarLista(v: Values, cual: 'proc' | 'pol'): Conteo {
+  const cols = columnas(v)
+  return { filled: cols.filter((c) => listaDe(v, cual, c.i, true).length > 0).length, total: cols.length }
 }
 
 export function conteo(v: Values, key: BlockKey): Conteo {
@@ -128,17 +186,22 @@ export function conteo(v: Values, key: BlockKey): Conteo {
       return contarCols(v, K.mec)
     case 'neg.est':
       return contarCols(v, K.est)
+    // un imperativo cuenta como cubierto en cuanto tiene un renglón escrito
     case 'neg.proc':
-      return contarCols(v, K.proc)
+      return contarLista(v, 'proc')
     case 'neg.pol':
-      return contarCols(v, K.pol)
+      return contarLista(v, 'pol')
     case 'neg.ind': {
-      const n = int(v, K.indCount, IND_DEFAULT)
       let filled = 0
-      for (let r = 0; r < n; r++) {
-        if (g(v, K.ind(r, 'nombre')) && g(v, K.ind(r, 'meta'))) filled++
-      }
-      return { filled, total: n }
+      let total = 0
+      columnas(v).forEach((c) => {
+        const n = int(v, K.indCount(c.i), IND_DEFAULT)
+        total += n
+        for (let r = 0; r < n; r++) {
+          if (g(v, K.ind(c.i, r, 'nombre')) && g(v, K.ind(c.i, r, 'meta'))) filled++
+        }
+      })
+      return { filled, total }
     }
   }
 }
@@ -290,7 +353,6 @@ export function documento(v: Values): SeccionDoc[] {
     cols.map((c) => ({ id: `c${c.i}`, label: c.label, texto: g(v, key(c.i)) }))
 
   const rowsCond = int(v, K.condRows, COND_ROWS_DEFAULT)
-  const nInd = int(v, K.indCount, IND_DEFAULT)
 
   return [
     {
@@ -332,24 +394,33 @@ export function documento(v: Values): SeccionDoc[] {
       id: 'ind',
       titulo: 'NEGOCIO · Indicadores críticos',
       key: 'neg.ind',
-      items: Array.from({ length: nInd }, (_, r) => {
-        const nombre = g(v, K.ind(r, 'nombre'))
-        const actual = g(v, K.ind(r, 'actual'))
-        const meta = g(v, K.ind(r, 'meta'))
-        const fuente = g(v, K.ind(r, 'fuente'))
-        const partes = [
-          actual || meta ? `actual ${actual || '—'} → 2027 ${meta || '—'}` : '',
-          fuente ? `fuente: ${fuente}` : '',
-        ].filter(Boolean)
-        return {
-          id: `r${r}`,
-          label: nombre || `Indicador ${String.fromCharCode(65 + r)}`,
-          texto: nombre ? partes.join(' · ') : '',
-        }
-      }),
+      // cada indicador se lee bajo su imperativo: sin eso no se sabe qué mide
+      items: cols.flatMap((c) =>
+        indicadoresDe(v, c.i).map((x) => {
+          const partes = [
+            x.actual || x.meta ? `actual ${x.actual || '—'} → 2027 ${x.meta || '—'}` : '',
+            x.fuente ? `fuente: ${x.fuente}` : '',
+          ].filter(Boolean)
+          return {
+            id: `c${c.i}r${x.r}`,
+            label: `${c.label} · ${x.nombre || `Indicador ${letraIndicador(x.r)}`}`,
+            texto: x.nombre ? partes.join(' · ') : '',
+          }
+        }),
+      ),
     },
-    { id: 'proc', titulo: 'NEGOCIO · Procesos críticos', key: 'neg.proc', items: porColumna(K.proc) },
-    { id: 'pol', titulo: 'NEGOCIO · Políticas', key: 'neg.pol', items: porColumna(K.pol) },
+    {
+      id: 'proc',
+      titulo: 'NEGOCIO · Procesos críticos',
+      key: 'neg.proc',
+      items: cols.map((c) => ({ id: `c${c.i}`, label: c.label, texto: listaTexto(v, 'proc', c.i) })),
+    },
+    {
+      id: 'pol',
+      titulo: 'NEGOCIO · Políticas',
+      key: 'neg.pol',
+      items: cols.map((c) => ({ id: `c${c.i}`, label: c.label, texto: listaTexto(v, 'pol', c.i) })),
+    },
   ]
 }
 
@@ -472,6 +543,46 @@ export function avancePreEvento(v: Values): number {
 }
 
 /* ------------------------------------------------------------------ *
+ * Herencia Pre-evento → Off-Site
+ * ------------------------------------------------------------------ */
+
+/** Una síntesis escrita como lista, un renglón por punto. */
+function comoLista(texto: string): string[] {
+  return texto
+    .split(/\r?\n|;/)
+    .map((l) => l.replace(/^\s*(?:\d+[.)]|[•·\-–])\s*/, '').trim())
+    .filter(Boolean)
+}
+
+/**
+ * El Off-Site no arranca en blanco: hereda lo que quedó escrito en el
+ * Consolidado. Devuelve solo las claves que hay que sembrar, así nunca pisa
+ * algo ya capturado ni una definición aprobada en la sesión.
+ */
+export function herenciaOffsite(v: Values): Values {
+  const nuevo: Values = {}
+
+  // Propuesta de Valor: los tres campos comparten id con los temas del consolidado
+  for (const c of CAMPOS_PROPUESTA) {
+    const sintesis = g(v, K.cons('pdv', c.id))
+    if (sintesis && !g(v, K.pdv(c.id))) nuevo[K.pdv(c.id)] = sintesis
+  }
+
+  // Imperativos: solo si la síntesis de candidatos viene como lista; un párrafo
+  // suelto no se parte a la fuerza, se queda para que alguien lo redacte
+  const candidatos = comoLista(g(v, K.cons('imp', 'candidatos')))
+  if (candidatos.length > 1) {
+    const n = int(v, K.impCount, IMP_DEFAULT)
+    if (candidatos.length > n) nuevo[K.impCount] = String(candidatos.length)
+    candidatos.forEach((nombre, i) => {
+      if (!g(v, K.impNombre(i))) nuevo[K.impNombre(i)] = nombre
+    })
+  }
+
+  return nuevo
+}
+
+/* ------------------------------------------------------------------ *
  * Exportacion
  * ------------------------------------------------------------------ */
 
@@ -499,18 +610,17 @@ export function matrizCsv(v: Values): string {
     rows.push(['CULTURA · Prácticas corporativas', c.label, g(v, K.prac(c.i)), ''])
     rows.push(['CULTURA · Mecanismos de refuerzo', c.label, g(v, K.mec(c.i)), ''])
     rows.push(['NEGOCIO · Estándares', c.label, g(v, K.est(c.i)), ''])
-    rows.push(['NEGOCIO · Procesos críticos', c.label, g(v, K.proc(c.i)), ''])
-    rows.push(['NEGOCIO · Políticas', c.label, g(v, K.pol(c.i)), ''])
+    rows.push(['NEGOCIO · Procesos críticos', c.label, listaTexto(v, 'proc', c.i), ''])
+    rows.push(['NEGOCIO · Políticas', c.label, listaTexto(v, 'pol', c.i), ''])
+    indicadoresDe(v, c.i, true).forEach((x) => {
+      rows.push([
+        'NEGOCIO · Indicadores críticos',
+        `${c.label} · ${x.nombre}`,
+        `actual ${x.actual || '—'} · 2027 ${x.meta || '—'}`,
+        x.fuente,
+      ])
+    })
   })
-  const nInd = int(v, K.indCount, IND_DEFAULT)
-  for (let r = 0; r < nInd; r++) {
-    rows.push([
-      'NEGOCIO · Indicadores críticos',
-      g(v, K.ind(r, 'nombre')),
-      `actual ${g(v, K.ind(r, 'actual')) || '—'} · 2027 ${g(v, K.ind(r, 'meta')) || '—'}`,
-      g(v, K.ind(r, 'fuente')),
-    ])
-  }
   return rows.map((r) => r.map(csvCell).join(',')).join('\n')
 }
 

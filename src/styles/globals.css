@@ -58,6 +58,10 @@ button,input,textarea,select{font-family:inherit;color:inherit}
 }
 .mini:hover{border-color:#CFCFD4;color:var(--ink)}
 
+/* la referencia tiene que saltar a la vista desde cualquier pantalla */
+.mini-ejemplos{background:#FFD400;border-color:#E6BF00;color:var(--red);font-weight:800}
+.mini-ejemplos:hover{background:#FFDE33;border-color:#E6BF00;color:var(--red)}
+
 .scroll{flex:1;overflow-y:auto}
 .hoja{max-width:1400px;margin:0 auto;padding:30px 40px 40px}
 
@@ -109,34 +113,6 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .eyebrow.e-off{color:var(--orange)}
 
 /* ---------------------------------------------------------------- *
- * Traspaso: la costura entre los dos módulos
- * ---------------------------------------------------------------- */
-.traspaso{
-  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
-  margin-top:16px;padding:12px 16px;border-radius:12px;border:1px solid var(--line);background:var(--soft);
-}
-.traspaso.pre{border-color:#DCE6FA;background:var(--blue-soft)}
-.traspaso.off{border-color:#F7DCCE;background:var(--orange-soft)}
-.traspaso-h{display:flex;flex-direction:column;gap:2px}
-.traspaso-t{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
-.traspaso.pre .traspaso-t{color:var(--blue)}
-.traspaso.off .traspaso-t{color:var(--orange-ink)}
-.traspaso-sub{font-size:12px;color:var(--ink2)}
-
-.traspaso-items{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
-.tr-item{
-  display:flex;align-items:center;gap:7px;cursor:pointer;
-  background:#fff;border:1px solid var(--line);border-radius:9px;padding:6px 11px;
-  font-size:12px;color:var(--ink2);transition:border-color .15s}
-.tr-item:hover{border-color:#B9BBC2}
-.tr-item b{font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
-.tr-pt{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
-.tr-item.falta .tr-pt{background:var(--red)}
-.tr-item.parcial .tr-pt{background:var(--orange)}
-.tr-item.ok .tr-pt{background:var(--green)}
-.tr-ejemplos{flex:0 0 auto;white-space:nowrap}
-
-/* ---------------------------------------------------------------- *
  * Ejemplos de otras empresas
  * ---------------------------------------------------------------- */
 .modal.ejemplos{width:min(1500px,100%);max-height:92vh}
@@ -171,6 +147,26 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .caja > .chip{margin-bottom:14px}
 .caja-body{margin-top:12px}
 .caja-acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+
+/* 09 · un imperativo a la vez: su encabezado y sus bloques, sin nada más alrededor */
+.imperativo-foco{background:#fff}
+.foco-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+  padding-bottom:14px;border-bottom:1px solid var(--line)}
+.foco-n{
+  font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;flex:0 0 auto;
+  background:var(--orange-soft);color:var(--orange-ink);padding:6px 9px;border-radius:6px;
+}
+.foco-t{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.3}
+.foco-bloque{margin-top:20px}
+.foco-bloque-h{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}
+.foco-bloque-h .muted{font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.foco-bloque > .chip{margin-bottom:12px}
+/* procesos y políticas: un renglón por punto, como se llenaría en el Excel */
+.lista-renglones{list-style:none;margin:0;padding:0}
+.lista-renglones li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:center;
+  padding:7px 0;border-bottom:1px solid var(--line2)}
+.lista-renglones li:last-child{border-bottom:0}
+.renglon-n{font-size:11.5px;font-weight:800;color:#B7B8BE;font-variant-numeric:tabular-nums}
 
 .dos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
@@ -237,12 +233,6 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .line::placeholder{color:#C9CAD0}
 .line.center{text-align:center}
 
-.select{
-  border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12.5px;
-  font-weight:600;padding:8px 10px;outline:none;cursor:pointer;
-}
-.select:focus{border-color:var(--orange)}
-
 .fila-imp{display:grid;grid-template-columns:130px minmax(0,1fr);gap:14px;align-items:start;
   padding:12px 0;border-bottom:1px solid var(--line)}
 .fila-imp:last-child{border-bottom:0}
@@ -277,6 +267,7 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
   font-size:11.5px;line-height:1.45;color:#C3C4CA;
 }
 .asis-btns{display:flex;gap:9px;margin-top:14px}
+.asis-reabrir{width:100%;margin-top:10px}
 .asis-btns .btn{flex:1;text-align:center}
 /* la salida se abre debajo de los botones y crece con lo que va llegando */
 .asis-out{
@@ -289,7 +280,6 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .asis-ph{color:#C3C4CA}
 .asis-err{color:var(--red)}
 .asis-ok{color:var(--green);font-weight:600}
-.asis-lead{font-weight:700;color:var(--ink)}
 
 /* asistente de la entrevista: repreguntas y borradores */
 .asis-item{padding:12px 0;border-top:1px solid var(--line)}
@@ -324,7 +314,6 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
   border-left:2px solid var(--orange);padding-left:9px;margin:0 0 9px;
 }
 .asis-falta .btn{padding:6px 11px;font-size:11.5px}
-.asis-nota-pie{margin:12px 0 0;font-size:11px;line-height:1.4;color:#B7B8BE}
 .asis-b{padding-left:13px;position:relative}
 .asis-b::before{content:"–";position:absolute;left:0;color:var(--orange)}
 
@@ -391,8 +380,12 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .cec{display:grid;grid-template-columns:200px minmax(0,1fr);gap:18px;align-items:start}
 .caja-h{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:14px}
 .caja-h .muted{font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
+/* sin título a la izquierda, el conteo se queda pegado a la derecha */
+.caja-h.solo-conteo{justify-content:flex-end}
 
 .preguntas{list-style:none;margin:0;padding:0}
+/* los tabs no deben quedar encima de la primera pregunta */
+.pills + .preguntas{margin-top:20px;padding-top:18px;border-top:1px solid var(--line2)}
 .preguntas li{margin-bottom:6px}
 .preguntas li:last-child{margin-bottom:0}
 .preg-n{
@@ -465,7 +458,6 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .tabla td{padding:9px 12px;border-bottom:1px solid var(--line2);font-size:13px;color:var(--ink2);vertical-align:middle}
 .tabla tr:last-child td,.tabla tr:last-child th{border-bottom:0}
 .tabla tr.alerta th,.tabla tr.alerta td{background:#FFFAF8}
-.celda-cec{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dg-mix{color:var(--orange-ink);font-weight:700;font-size:12.5px}
 .w-sintesis{width:32%}
 .sintesis{display:flex;align-items:flex-end;gap:10px}
@@ -518,27 +510,21 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .contents{display:contents}
 .cuad-eje{font-size:10px;letter-spacing:.14em;font-weight:800;color:var(--muted);text-transform:uppercase;
   align-self:center;line-height:1.4}
+/* el encabezado lleva dos renglones: el ordinal fijo y el imperativo de la 06 */
 .cuad-col{
-  font-size:11px;letter-spacing:.05em;font-weight:800;text-transform:uppercase;text-align:center;
-  background:var(--line2);color:#6E7078;padding:9px 10px;border-radius:8px;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  display:flex;flex-direction:column;gap:3px;text-align:center;
+  background:var(--line2);color:#6E7078;padding:9px 10px;border-radius:8px;overflow:hidden;
 }
+.cuad-col-n{font-size:11px;letter-spacing:.05em;font-weight:800;text-transform:uppercase;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cuad-col-t{font-size:11.5px;font-weight:700;line-height:1.35;color:var(--ink)}
 .cuad-col.primera{background:var(--orange-soft);color:var(--orange-ink)}
+.cuad-col.primera .cuad-col-t{color:var(--orange-ink)}
 .cuad-fila{font-size:12px;font-weight:800;color:#B7B8BE;padding-top:14px;font-variant-numeric:tabular-nums}
 .celda{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:10px 12px;
   display:flex;flex-direction:column;gap:6px;min-height:86px}
 .celda:focus-within{border-color:#FFC0A6;background:#fff}
 .celda-mas{align-self:flex-end}
-
-.lista-conductas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
-.lista-conductas li{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:14px;align-items:end;
-  border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-
-.barra-vista{
-  display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:16px;
-  border:1px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--soft);
-  font-size:12.5px;color:var(--ink2);
-}
 
 /* ---------------------------------------------------------------- *
  * 10 · validación cruzada
@@ -546,27 +532,6 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .validacion{display:flex;align-items:flex-start;gap:12px;margin-top:16px;font-size:12.5px;line-height:1.5}
 .avisos{list-style:none;margin:0;padding:0;color:var(--amber)}
 .avisos li{margin-bottom:4px}
-
-/* ---------------------------------------------------------------- *
- * 11 · off-site
- * ---------------------------------------------------------------- */
-.offsite{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start}
-.preliminar{background:#fff;border-color:#FFD9C8}
-.prelim-t{font-size:10px;letter-spacing:.14em;font-weight:800;color:var(--orange);text-transform:uppercase}
-.preliminar blockquote{margin:14px 0 0;font-size:22px;line-height:1.3;font-weight:800;letter-spacing:-.025em}
-.preliminar blockquote.vacia{font-size:16px;font-weight:600;color:#C3C4CA}
-.preliminar .field{margin-top:12px;font-size:16px}
-.prelim-sub{margin:14px 0 0;font-size:12px;color:var(--muted)}
-.prelim-btns{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
-
-.ev-fila{display:grid;grid-template-columns:88px minmax(0,1fr);gap:12px;align-items:center;
-  padding:12px 0;border-bottom:1px solid var(--line)}
-.ev-fila:last-child{border-bottom:0}
-.ev-txt{margin:0;font-size:12.5px;line-height:1.45;color:var(--ink2)}
-
-.contadores{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px;
-  border:1px solid var(--line);border-radius:12px;padding:14px 18px}
-.cont{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;font-weight:700}
 
 /* ---------------------------------------------------------------- *
  * Modal
@@ -584,6 +549,44 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .modal-btns{display:flex;gap:9px;margin-top:14px;justify-content:flex-end}
 
 /* ---------------------------------------------------------------- *
+ * Redacción final: el antes y el después, enfrentados
+ * ---------------------------------------------------------------- */
+.modal.redaccion{width:min(1240px,100%);max-height:92vh;padding:22px 24px}
+.red-h{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  padding-bottom:14px;border-bottom:1px solid var(--line)}
+.red-h h3{margin:0 0 4px}
+.red-h p{margin:0;max-width:70ch}
+.red-h-btns{display:flex;gap:9px;flex:0 0 auto}
+
+.red-body{flex:1;min-height:0;overflow-y:auto;margin-top:16px;display:flex;flex-direction:column;gap:14px}
+
+.red-item{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff}
+/* lo que no cambió no compite por atención con lo que sí */
+.red-item.igual{background:var(--soft);opacity:.7}
+.red-item-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.red-bloque{font-size:10px;letter-spacing:.12em;font-weight:800;text-transform:uppercase;color:var(--orange)}
+.red-campo{font-size:12px;color:var(--muted);line-height:1.4}
+
+.red-par{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.red-lado{display:flex;flex-direction:column;gap:8px;min-width:0}
+.red-lado p{margin:0;font-size:13.5px;line-height:1.55;white-space:pre-wrap}
+.red-lado.antes p{color:var(--muted)}
+.red-lado.ahora{
+  border-left:3px solid var(--orange);padding-left:14px;
+}
+.red-lado.ahora p{color:var(--ink);font-weight:600}
+.red-esperando{color:#C3C4CA;font-style:italic}
+
+.red-item-f{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--line2)}
+.red-porque{font-size:11.5px;line-height:1.45;color:var(--muted);max-width:70ch}
+
+@media (max-width:900px){
+  .red-par{grid-template-columns:minmax(0,1fr)}
+  .red-lado.ahora{border-left:0;border-top:3px solid var(--orange);padding-left:0;padding-top:12px}
+}
+
+/* ---------------------------------------------------------------- *
  * Responsive
  * ---------------------------------------------------------------- */
 @media (max-width:1200px){
@@ -598,23 +601,21 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
   .topbar-r{justify-self:center}
   .hoja{padding:24px 20px 32px}
   h1{font-size:26px}
-  .dos,.tres,.offsite,.contadores,.identidad{grid-template-columns:minmax(0,1fr)}
+  .dos,.tres,.identidad{grid-template-columns:minmax(0,1fr)}
   .cec{grid-template-columns:minmax(0,1fr)}
   .side-tabs{flex-direction:row;flex-wrap:wrap}
   .imp{grid-template-columns:44px minmax(0,1fr);row-gap:10px}
   .doc-item{grid-template-columns:minmax(0,1fr);gap:2px}
   .cuadricula{display:flex;flex-direction:column}
-  .lista-conductas li{grid-template-columns:minmax(0,1fr)}
   .historial li{grid-template-columns:minmax(0,1fr)}
   .modulos{flex-direction:column;padding:10px 20px}
-  .traspaso-items{margin-left:0}
 }
 
 /* ---------------------------------------------------------------- *
  * Impresión (Exportar PDF)
  * ---------------------------------------------------------------- */
 @media print{
-  .topbar,.modulos,.tabs,.traspaso,.asis,.pie,.final-acciones{display:none !important}
+  .topbar,.modulos,.tabs,.asis,.pie,.final-acciones{display:none !important}
   .scroll{overflow:visible}
   .hoja{padding:0;max-width:none}
   .cols{grid-template-columns:1fr}

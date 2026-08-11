@@ -1,5 +1,5 @@
 import { CAMPOS_PROPUESTA } from '../../data/content'
-import { COND_ROWS_DEFAULT, IND_DEFAULT, K, imperativos } from '../../lib/model'
+import { COND_ROWS_DEFAULT, K, imperativos, indicadoresDe, listaDe } from '../../lib/model'
 import { useStore } from '../../lib/store'
 
 /**
@@ -42,14 +42,6 @@ export default function OnePage() {
 
   const imps = imperativos(values).filter((im) => im.nombre)
   const filas = num(K.condRows, COND_ROWS_DEFAULT)
-  const nInd = num(K.indCount, IND_DEFAULT)
-
-  const indicadores = Array.from({ length: nInd }, (_, r) => ({
-    nombre: get(K.ind(r, 'nombre')),
-    actual: get(K.ind(r, 'actual')),
-    meta: get(K.ind(r, 'meta')),
-    fuente: get(K.ind(r, 'fuente')),
-  })).filter((x) => x.nombre)
 
   return (
     <article className="onepage">
@@ -122,8 +114,28 @@ export default function OnePage() {
                     {get(K.est(im.i)) ? <b>{get(K.est(im.i))}</b> : <p className="op-falta">Sin definir</p>}
                   </div>
                   <div className="op-dos">
-                    <Lista titulo="Procesos críticos" items={vinetas(get(K.proc(im.i)))} />
-                    <Lista titulo="Políticas" items={vinetas(get(K.pol(im.i)))} />
+                    <Lista titulo="Procesos críticos" items={listaDe(values, 'proc', im.i, true).map((x) => x.texto)} />
+                    <Lista titulo="Políticas" items={listaDe(values, 'pol', im.i, true).map((x) => x.texto)} />
+                  </div>
+
+                  {/* los indicadores del imperativo, tal como se capturaron en la 09 */}
+                  <div className="op-lista">
+                    <span className="op-mini">Indicadores críticos</span>
+                    {indicadoresDe(values, im.i, true).length ? (
+                      <div className="op-inds">
+                        {indicadoresDe(values, im.i, true).map((x) => (
+                          <div key={x.r} className="op-ind">
+                            <b>{x.nombre}</b>
+                            <span className="op-ind-n">
+                              {x.actual || '—'} <em>→ 2027</em> {x.meta || '—'}
+                            </span>
+                            <span className="op-ind-f">{x.fuente || 'sin fuente'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="op-falta">Sin indicadores definidos</p>
+                    )}
                   </div>
                 </div>
               </section>
@@ -131,29 +143,6 @@ export default function OnePage() {
           })}
         </div>
       )}
-
-      {/* en UPAX los indicadores son una tabla del grupo, no una lista por
-          imperativo: van juntos al cierre y conservan su actual, su meta y su fuente */}
-      <p className="op-sec">
-        <span className="op-letra">E</span> Indicadores críticos
-      </p>
-      <div className="op-card">
-        {indicadores.length ? (
-          <div className="op-inds">
-            {indicadores.map((x, i) => (
-              <div key={`${x.nombre}-${i}`} className="op-ind">
-                <b>{x.nombre}</b>
-                <span className="op-ind-n">
-                  {x.actual || '—'} <em>→ 2027</em> {x.meta || '—'}
-                </span>
-                <span className="op-ind-f">{x.fuente || 'sin fuente'}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="op-falta">Sin indicadores definidos.</p>
-        )}
-      </div>
 
       <footer className="op-pie">
         <span>Documento de trabajo · cada campo conserva fuente, autor, versión y decisión final.</span>

@@ -33,7 +33,6 @@ export const TABS: Tab[] = [
   { id: 'imperativos', label: 'Imperativos', modulo: 'off' },
   { id: 'cultura', label: 'Cultura', modulo: 'off' },
   { id: 'negocio', label: 'Negocio', modulo: 'off' },
-  { id: 'offsite', label: 'Off-Site', modulo: 'off' },
   { id: 'final', label: 'Final', modulo: 'off' },
 ]
 
@@ -62,6 +61,7 @@ export const SCREENS: ScreenMeta[] = [
     tab: 'ceo',
     title: 'Entrevista con el CEO',
     sub: 'Una sola entrevista estructurada con las mismas secciones del Excel. La plataforma captura, transcribe y convierte respuestas en material de trabajo.',
+    sinAsistente: true,
     copi: [
       'Resumir la respuesta sin cambiar su sentido',
       'Repreguntar cuando la respuesta sea ambigua',
@@ -75,6 +75,7 @@ export const SCREENS: ScreenMeta[] = [
     tab: 'dgs',
     title: 'Entrevistas con cada DG + archivos',
     sub: 'Misma estructura para todas las unidades. Así evitamos un ejercicio distinto por cada una y logramos información comparable desde el inicio.',
+    sinAsistente: true,
     copi: [
       'Preparar la entrevista con base en sus archivos',
       'Comparar respuestas entre DGs',
@@ -103,6 +104,7 @@ export const SCREENS: ScreenMeta[] = [
     title: 'Construcción de la Propuesta de Valor',
     sub: 'Aquí se trabajan únicamente los tres campos del Excel: Para qué existimos, Promesa y Frase puente.',
     foot: 'Referencia disponible dentro de cada campo: Walmart · Toyota · WPP · ejemplos del Excel.',
+    sinAsistente: true,
     copi: [
       'Generar alternativas usando sólo evidencia cargada',
       'Simplificar sin perder contenido',
@@ -117,6 +119,7 @@ export const SCREENS: ScreenMeta[] = [
     title: 'Construcción de Imperativos Estratégicos',
     sub: 'La plataforma convierte la información previa en pocos imperativos claros y permite probar si realmente soportan la Propuesta de Valor.',
     foot: 'Cada imperativo se convierte después en una columna de Cultura y Negocio, como en el Excel.',
+    sinAsistente: true,
     copi: [
       'Agrupar ideas repetidas sin perder matices',
       'Señalar imperativos demasiado genéricos',
@@ -130,6 +133,7 @@ export const SCREENS: ScreenMeta[] = [
     tab: 'cultura',
     title: 'Cultura: cómo pensamos, decidimos y actuamos',
     sub: 'Una cuadrícula por imperativo. Se redactan comportamientos concretos, no palabras aspiracionales sueltas.',
+    sinAsistente: true,
     copi: [
       'Convertir conceptos abstractos en conductas observables',
       'Eliminar frases redundantes',
@@ -144,6 +148,7 @@ export const SCREENS: ScreenMeta[] = [
     title: 'Cultura: prácticas corporativas y mecanismos de refuerzo',
     sub: 'La misma lógica del Excel: qué hacemos de forma repetible y qué mecanismos hacen que realmente ocurra.',
     foot: 'El asistente puede sugerir, pero la plataforma obliga a que cada práctica y mecanismo quede asociado a un imperativo.',
+    sinAsistente: true,
     copi: [
       'Proponer prácticas a partir de comportamientos aprobados',
       'Detectar prácticas sin mecanismo de refuerzo',
@@ -155,44 +160,20 @@ export const SCREENS: ScreenMeta[] = [
     id: 's09',
     num: 9,
     tab: 'negocio',
-    title: 'Negocio: estándares e indicadores críticos',
-    sub: 'Aquí entra el componente cuantitativo sin convertir todo el Off-Site en un presupuesto: sólo los números que soportan lo que se quiere construir.',
+    title: 'Negocio: estándares, indicadores, procesos y políticas',
+    sub: 'Los cuatro bloques de Negocio del Excel, un imperativo a la vez: el número que se exige, cómo se mide, qué proceso lo sostiene y qué regla gobierna la decisión.',
+    foot: 'Los cuatro bloques se leen juntos: un estándar sin indicador o una política sin proceso se detectan aquí, no al final.',
+    sinAsistente: true,
     copi: [
       'Identificar números ya presentes en archivos',
       'Separar indicador actual de meta 2027',
       'Alertar cuando un número no tiene fuente',
-      'Proponer qué medir sólo cuando exista un imperativo claro',
-    ],
-  },
-  {
-    id: 's10',
-    num: 10,
-    tab: 'negocio',
-    title: 'Negocio: procesos críticos y políticas',
-    sub: 'Últimos bloques del Excel. Se aterriza qué procesos deben sostener la cultura y qué reglas deben gobernar decisiones importantes.',
-    copi: [
       'Relacionar procesos y políticas con cada imperativo',
-      'Detectar reglas contradictorias entre unidades',
-      'Señalar procesos mencionados por varios DGs',
-      'Proponer redacción concreta y verificable',
-    ],
-  },
-  {
-    id: 's11',
-    num: 11,
-    tab: 'offsite',
-    title: 'Pantalla de trabajo durante el Off-Site',
-    sub: 'No se parte de una hoja en blanco. Se presenta cada definición preliminar, su evidencia y sus alternativas; el grupo edita y decide en vivo.',
-    copi: [
-      'Registrar cambios y decisiones en vivo',
-      'Recuperar evidencia cuando alguien cuestione una frase',
-      'Comparar la propuesta con entrevistas originales',
-      'Actualizar automáticamente la matriz maestra',
     ],
   },
   {
     id: 's12',
-    num: 12,
+    num: 10,
     tab: 'final',
     title: 'Resultado final: matriz UPAX completada',
     sub: 'El proceso termina donde empezó: el Excel convertido en una arquitectura única, trazable y lista para exportar o seguir evolucionando.',

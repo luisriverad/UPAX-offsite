@@ -2,16 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Asistente from './components/Asistente'
 import Modal from './components/Modal'
 import type { ModalMode } from './components/Modal'
-import Traspaso from './components/Traspaso'
+import Ejemplos from './components/Ejemplos'
 import { PANTALLAS } from './components/screens'
 import { MODULOS, SCREENS, firstOfModulo, firstOfTab, moduloDeTab, tabsDeModulo } from './data/screens'
-import { avancePreEvento, avanceTotal } from './lib/model'
+import { avancePreEvento, avanceTotal, herenciaOffsite } from './lib/model'
 import { useStore } from './lib/store'
 
 export default function App() {
   const [actual, setActual] = useState(0)
   const [modal, setModal] = useState<ModalMode>(null)
-  const { values, reset } = useStore()
+  const [verEjemplos, setVerEjemplos] = useState(false)
+  const { values, reset, setMany } = useStore()
   const main = useRef<HTMLDivElement>(null)
 
   const ir = useCallback((i: number) => {
@@ -35,6 +36,18 @@ export default function App() {
   const Pantalla = PANTALLAS[screen.id]
   const modulo = moduloDeTab(screen.tab)
   const moduloActual = MODULOS.find((m) => m.id === modulo) ?? MODULOS[0]
+
+  // el Off-Site no arranca en blanco: al entrar hereda lo que quedó en el Consolidado.
+  // Se lee por referencia y solo al cambiar de módulo, para no repoblar un campo
+  // que alguien acaba de borrar a propósito durante la sesión.
+  const valuesRef = useRef(values)
+  valuesRef.current = values
+  useEffect(() => {
+    if (modulo !== 'off') return
+    const herencia = herenciaOffsite(valuesRef.current)
+    if (Object.keys(herencia).length > 0) setMany(herencia)
+  }, [modulo, setMany])
+
   // cada módulo se mide con lo suyo: el previo por evidencia levantada, el off-site por la matriz
   const avance = { pre: avancePreEvento(values), off: avanceTotal(values) }
 
@@ -62,6 +75,10 @@ export default function App() {
           <span className="avance">
             Pre-evento {avance.pre}% · Off-Site {avance.off}%
           </span>
+          {/* la referencia va arriba, a la mano desde cualquier pantalla */}
+          <button type="button" className="mini mini-ejemplos" onClick={() => setVerEjemplos(true)}>
+            Ver ejemplos
+          </button>
           <button type="button" className="mini" onClick={() => window.print()}>
             Exportar a PDF
           </button>
@@ -110,8 +127,6 @@ export default function App() {
             ))}
           </nav>
 
-          <Traspaso modulo={modulo} onIr={(tab) => ir(firstOfTab(tab))} />
-
           <div className={`cols ${screen.sinAsistente ? 'sola' : ''}`}>
             <Pantalla screen={screen} onGo={ir} />
             {!screen.sinAsistente && <Asistente screen={screen} />}
@@ -138,6 +153,8 @@ export default function App() {
           </footer>
         </div>
       </div>
+
+      <Ejemplos abierto={verEjemplos} onClose={() => setVerEjemplos(false)} />
 
       <Modal
         mode={modal}
