@@ -1,5 +1,5 @@
 import { CAMPOS_PROPUESTA } from '../../data/content'
-import { COND_ROWS_DEFAULT, K, imperativos, indicadoresDe, listaDe } from '../../lib/model'
+import { COND_ROWS_DEFAULT, K, indicadoresDe, listaDe, seleccionados } from '../../lib/model'
 import { useStore } from '../../lib/store'
 
 /**
@@ -40,13 +40,15 @@ function Lista({ titulo, items }: { titulo: string; items: string[] }) {
 export default function OnePage() {
   const { values, get, num } = useStore()
 
-  const imps = imperativos(values).filter((im) => im.nombre)
+  // la lámina lleva los que quedaron, no la mesa de trabajo entera
+  const imps = seleccionados(values).filter((im) => im.nombre)
   const filas = num(K.condRows, COND_ROWS_DEFAULT)
 
   return (
     <article className="onepage">
       <header className="op-h">
-        <h2>UPAX</h2>
+        {/* la lámina se exporta y circula sola: sale con la marca, no con el nombre en texto */}
+        <img className="op-logo" src="/logo-upax.png" alt="Grupo UPAX" />
         <div className="op-h-r">
           <span className="op-vibe">
             VIBE <em>Framework</em>
@@ -145,7 +147,6 @@ export default function OnePage() {
       )}
 
       <footer className="op-pie">
-        <span>Documento de trabajo · cada campo conserva fuente, autor, versión y decisión final.</span>
         <span className="op-marca">ONE-PAGE</span>
       </footer>
     </article>

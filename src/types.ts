@@ -1,5 +1,5 @@
 export type TabId =
-  | 'mapa'
+  | 'manifiesto'
   | 'ceo'
   | 'dgs'
   | 'consolidado'
@@ -30,8 +30,6 @@ export interface ScreenMeta {
   sub?: string
   /** las cuatro directrices que muestra el panel del asistente */
   copi: string[]
-  /** nota al pie del panel principal */
-  foot?: string
   /** oculta el panel del asistente y deja la pantalla a todo lo ancho */
   sinAsistente?: boolean
 }

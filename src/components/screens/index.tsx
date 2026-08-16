@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import S01Mapa from './S01Mapa'
+import S00Manifiesto from './S00Manifiesto'
 import S02Ceo from './S02Ceo'
 import S03Dgs from './S03Dgs'
 import S04Consolidado from './S04Consolidado'
@@ -13,7 +13,7 @@ import type { ScreenProps } from './tipos'
 
 /** Una pantalla del diseño funcional por cada id de `SCREENS`. */
 export const PANTALLAS: Record<string, ComponentType<ScreenProps>> = {
-  s01: S01Mapa,
+  s00: S00Manifiesto,
   s02: S02Ceo,
   s03: S03Dgs,
   s04: S04Consolidado,

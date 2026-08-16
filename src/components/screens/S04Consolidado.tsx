@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { DGS, VISTAS_CONSOLIDADO } from '../../data/content'
-import { K, archivosCargados, dgsQueRespondieron, fraseCeo, respuestasCeo } from '../../lib/model'
+import { K, archivosCargados, dgsQueRespondieron, fraseCeo } from '../../lib/model'
 import { MOLDES_PDV, campoPdv } from '../../lib/redaccionPdv'
 import { useStore } from '../../lib/store'
-import { Chip, Field, Foot, PillTabs } from '../ui'
-import type { ScreenProps } from './tipos'
+import { Chip, Field, PillTabs } from '../ui'
 
-export default function S04Consolidado({ screen }: ScreenProps) {
+export default function S04Consolidado() {
   const { values, get } = useStore()
   const [vistaId, setVista] = useState(VISTAS_CONSOLIDADO[0].id)
   const [editando, setEditando] = useState<string | null>(null)
@@ -89,9 +88,6 @@ export default function S04Consolidado({ screen }: ScreenProps) {
         </tbody>
       </table>
 
-      <Foot>
-        {screen.foot} · {respuestasCeo(values)} respuestas del CEO cargadas.
-      </Foot>
     </section>
   )
 }

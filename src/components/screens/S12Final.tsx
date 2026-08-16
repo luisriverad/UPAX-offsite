@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { avanceTotal, descargar, matrizCsv } from '../../lib/model'
 import { useStore } from '../../lib/store'
-import { Chip, Foot, Panel } from '../ui'
+import { Chip, Panel } from '../ui'
 import OnePage from './OnePage'
-import type { ScreenProps } from './tipos'
 
-export default function S12Final({ screen }: ScreenProps) {
+export default function S12Final() {
   const { values, hist } = useStore()
   const [verHist, setVerHist] = useState(false)
   const avance = avanceTotal(values)
@@ -47,7 +46,6 @@ export default function S12Final({ screen }: ScreenProps) {
         <button type="button" className="btn btn-ghost" onClick={() => setVerHist(!verHist)}>
           Historial de versiones {hist.length > 0 && `(${hist.length})`}
         </button>
-        <Foot>{screen.foot}</Foot>
       </div>
 
       {verHist && (

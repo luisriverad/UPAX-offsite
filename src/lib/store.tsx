@@ -18,6 +18,14 @@ interface StoreCtx {
   hist: HistEntry[]
   replaceAll: (v: Values) => void
   reset: () => void
+  /** fuerza la escritura a disco sin esperar el autoguardado; false si no se pudo */
+  guardar: () => boolean
+  /** cuando se escribió por última vez, para poder decirlo en pantalla */
+  guardadoEn: number | null
+  /** todo lo capturado, como texto, para bajarlo a un archivo de respaldo */
+  exportar: () => string
+  /** carga un respaldo encima de lo actual; false si el archivo no sirve */
+  importar: (json: string) => boolean
 }
 
 const Ctx = createContext<StoreCtx | null>(null)
@@ -37,17 +45,25 @@ function readLocal(): Values {
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [values, setValues] = useState<Values>(() => readLocal())
+  const [guardadoEn, setGuardadoEn] = useState<number | null>(null)
+
+  /** El único punto que escribe a disco: lo usan el autoguardado y el botón. */
+  const escribir = useCallback((v: Values) => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(v))
+      setGuardadoEn(Date.now())
+      return true
+    } catch {
+      // almacenamiento lleno o bloqueado (modo incógnito, cookies de sitio off):
+      // el botón lo tiene que poder decir en vez de fingir que guardó
+      return false
+    }
+  }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      try {
-        localStorage.setItem(KEY, JSON.stringify(values))
-      } catch {
-        /* almacenamiento no disponible */
-      }
-    }, 350)
+    const t = setTimeout(() => escribir(values), 350)
     return () => clearTimeout(t)
-  }, [values])
+  }, [values, escribir])
 
   const get = useCallback((k: string) => values[k] ?? '', [values])
 
@@ -101,9 +117,48 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const replaceAll = useCallback((v: Values) => setValues(v || {}), [])
   const reset = useCallback(() => setValues({}), [])
 
+  const guardar = useCallback(() => escribir(values), [escribir, values])
+
+  const exportar = useCallback(() => JSON.stringify({ app: KEY, ts: Date.now(), values }, null, 2), [values])
+
+  const importar = useCallback(
+    (json: string) => {
+      try {
+        const leido = JSON.parse(json) as { app?: string; values?: Values } | Values
+        // se aceptan las dos formas: el respaldo con envoltura y el volcado crudo
+        const v = (leido as { values?: Values }).values ?? (leido as Values)
+        if (!v || typeof v !== 'object' || Array.isArray(v)) return false
+        const limpio = Object.fromEntries(
+          Object.entries(v).filter(([, valor]) => typeof valor === 'string'),
+        ) as Values
+        if (Object.keys(limpio).length === 0) return false
+        setValues(limpio)
+        escribir(limpio)
+        return true
+      } catch {
+        return false
+      }
+    },
+    [escribir],
+  )
+
   const api = useMemo(
-    () => ({ values, get, num, set, setMany, hist, logVersion, replaceAll, reset }),
-    [values, get, num, set, setMany, hist, logVersion, replaceAll, reset],
+    () => ({
+      values,
+      get,
+      num,
+      set,
+      setMany,
+      hist,
+      logVersion,
+      replaceAll,
+      reset,
+      guardar,
+      guardadoEn,
+      exportar,
+      importar,
+    }),
+    [values, get, num, set, setMany, hist, logVersion, replaceAll, reset, guardar, guardadoEn, exportar, importar],
   )
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
 }

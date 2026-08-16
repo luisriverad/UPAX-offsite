@@ -26,7 +26,9 @@ body{
   margin:0;
   font-family:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   color:var(--ink);
-  background:#fff;
+  /* el fondo de marca: queda fijo detrás de toda la plataforma, no viaja con el
+     scroll. El blanco de abajo cubre proporciones donde la imagen no alcanza */
+  background:#fff url('/fondo.png') center/cover no-repeat fixed;
   -webkit-font-smoothing:antialiased;
 }
 button,input,textarea,select{font-family:inherit;color:inherit}
@@ -40,20 +42,34 @@ button,input,textarea,select{font-family:inherit;color:inherit}
 /* tres columnas en vez de space-between: así el centro queda centrado de verdad,
    sin depender de que los extremos midan lo mismo */
 .topbar{
-  flex:0 0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;
-  padding:0 40px;height:62px;border-bottom:1px solid var(--line);background:#fff;
+  flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:20px;
+  /* con seis controles a la derecha la altura tiene que poder crecer: antes de
+     eso la marca de la izquierda cede espacio, y solo si no alcanza se parte
+     la fila de botones. Ninguna etiqueta se rompe a media palabra */
+  /* translúcida sobre el fondo de marca: la barra sigue legible y el degradado
+     no se corta en la parte superior de la pantalla */
+  padding:0 40px;min-height:62px;border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.72);backdrop-filter:blur(14px);
 }
 .vibe{display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1;white-space:nowrap}
 .vibe-n{font-size:16px;font-weight:800;letter-spacing:.08em}
 .vibe-n em{font-style:normal;font-weight:600;font-size:12px;letter-spacing:.02em;color:var(--muted)}
 .vibe-s{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .vibe-s b{color:var(--orange);font-weight:800}
-.marca{font-size:11.5px;letter-spacing:.16em;font-weight:600;color:var(--muted);text-transform:uppercase}
+/* el logo manda y el descriptor lo acompaña: si la barra se estrecha, lo que
+   cede es el texto —con puntos suspensivos—, nunca la marca */
+.marca{display:flex;align-items:center;gap:12px;min-width:0}
+.marca-logo{flex:0 0 auto;height:26px;width:auto;display:block}
+.marca-txt{
+  font-size:11.5px;letter-spacing:.16em;font-weight:600;color:var(--muted);text-transform:uppercase;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  padding-left:12px;border-left:1px solid var(--line);
+}
 .marca b{color:var(--ink);font-weight:800}
-.topbar-r{display:flex;align-items:center;gap:8px;justify-self:end}
-.avance{font-size:11.5px;color:var(--muted);font-weight:600;margin-right:6px;font-variant-numeric:tabular-nums}
+.topbar-r{display:flex;align-items:center;gap:6px;row-gap:6px;flex-wrap:wrap;justify-content:flex-end;justify-self:end;padding:9px 0}
+.avance{font-size:11.5px;color:var(--muted);font-weight:600;margin-right:2px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .mini{
-  font-size:11.5px;font-weight:700;padding:7px 12px;border-radius:8px;
+  font-size:11.5px;font-weight:700;padding:7px 9px;border-radius:8px;white-space:nowrap;
   border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer;
 }
 .mini:hover{border-color:#CFCFD4;color:var(--ink)}
@@ -61,6 +77,23 @@ button,input,textarea,select{font-family:inherit;color:inherit}
 /* la referencia tiene que saltar a la vista desde cualquier pantalla */
 .mini-ejemplos{background:#FFD400;border-color:#E6BF00;color:var(--red);font-weight:800}
 .mini-ejemplos:hover{background:#FFDE33;border-color:#E6BF00;color:var(--red)}
+
+/* guardar + respaldo como un solo control: se tocan, así se leen como una unidad
+   y ocupan lo que ocuparía un botón y medio */
+.mini-par{display:inline-flex}
+/* ancho fijo: "Guardado ✓" mide más que "Guardar" y, sin esto, la barra entera
+   se reacomoda durante los dos segundos del aviso cada vez que se guarda */
+.mini-guardar{min-width:94px;text-align:center}
+.mini-par .mini:first-child{border-top-right-radius:0;border-bottom-right-radius:0}
+.mini-par .mini:last-child{border-top-left-radius:0;border-bottom-left-radius:0;border-left-color:transparent;margin-left:-1px}
+.mini-respaldo{padding:7px 9px;font-size:14px;line-height:1;color:var(--muted)}
+.mini-guardar.guardado,.mini-guardar.error{position:relative;z-index:1}
+.mini-guardar.guardado{background:#E8F7EE;border-color:#9FD9B4;color:#1B7A44}
+.mini-guardar.error{background:#FDECEC;border-color:#EBA6A6;color:var(--red)}
+
+.modal.respaldo .respaldo-hora{margin:10px 0 0;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.modal.respaldo .respaldo-acciones{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.modal.respaldo .respaldo-aviso{margin:14px 0 0;font-size:13px;font-weight:600;color:var(--ink2)}
 
 .scroll{flex:1;overflow-y:auto}
 .hoja{max-width:1400px;margin:0 auto;padding:30px 40px 40px}
@@ -82,7 +115,7 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
  * ---------------------------------------------------------------- */
 .modulos{
   flex:0 0 auto;display:flex;gap:10px;padding:12px 40px;
-  border-bottom:1px solid var(--line);background:var(--soft);
+  border-bottom:1px solid var(--line);background:rgba(250,250,251,.62);backdrop-filter:blur(14px);
 }
 .modulo{
   flex:1;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;
@@ -129,8 +162,7 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .cols{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;margin-top:20px;align-items:start}
 .cols.sola{grid-template-columns:minmax(0,1fr)}
 
-.pie{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:26px}
-.pager{display:flex;gap:9px}
+.pie{display:flex;align-items:center;justify-content:flex-end;gap:20px;margin-top:26px}
 .folio{font-size:11.5px;color:#B5B6BC;font-variant-numeric:tabular-nums}
 
 /* ---------------------------------------------------------------- *
@@ -140,7 +172,6 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .panel-h{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
 .panel-t{font-size:10px;letter-spacing:.15em;font-weight:800;color:var(--muted);text-transform:uppercase;display:block}
 .panel-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.panel-foot{margin:16px 0 0;font-size:12px;color:#A9AAB1;line-height:1.5}
 
 .caja{border:1px solid var(--line);border-radius:12px;background:var(--soft);padding:16px 18px;min-width:0}
 .caja > .panel-t{margin-bottom:12px}
@@ -318,54 +349,45 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .asis-b::before{content:"–";position:absolute;left:0;color:var(--orange)}
 
 /* ---------------------------------------------------------------- *
- * 01 / 12 · matriz maestra
+ * 01 · manifiesto — el modelo VIBE en la plantilla de los one-page
  * ---------------------------------------------------------------- */
-.matriz{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.matriz tr{border-bottom:1px solid var(--line2)}
-.matriz tr:last-child{border-bottom:0}
-/* cada sección arranca con una línea más marcada */
-.matriz tr.grupo{border-top:1px solid var(--line)}
-.matriz tr.grupo:first-child{border-top:0}
-.matriz tr.clic{cursor:pointer}
-.matriz tr.clic:hover{background:var(--soft)}
-.matriz th{
-  text-align:left;font-size:11.5px;font-weight:800;letter-spacing:.02em;color:var(--ink);
-  padding:13px 14px;width:230px;vertical-align:middle;
-}
-.matriz td{padding:13px 14px;font-size:13px;color:var(--ink2);vertical-align:middle}
-.matriz .m-count{width:70px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
-.matriz .m-estado{width:130px;text-align:right}
+/* misma retícula que `.onepage`, pero se lee en pantalla y no en una hoja:
+   el cuerpo sube de tamaño y las tarjetas respiran más */
+.manifiesto{background:#fff;color:var(--ink);font-size:13px;line-height:1.5;
+  border:1px solid var(--line);border-radius:var(--r);padding:26px 28px}
+.manifiesto .op-card{padding:16px 18px}
+.manifiesto .op-lista li{font-size:12px;margin-bottom:4px}
+.manifiesto .op-mini{font-size:9px}
 
-/* la matriz y el documento vivo, lado a lado: los dos a la vista */
-.mapa{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px;align-items:start;min-width:0}
+/* el nombre del imperativo y su bajada, uno debajo del otro */
+.mf-imp-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mf-bajada{font-size:11.5px;font-weight:600;color:var(--ink2)}
 
-.doc-panel{
-  background:var(--soft);position:sticky;top:20px;
-  display:flex;flex-direction:column;max-height:calc(100vh - 104px);
-}
-/* solo el texto hace scroll; el encabezado se queda fijo */
-.doc-body{overflow-y:auto;min-height:0;margin:-4px -4px 0;padding:4px}
-.doc-nada{margin:0;font-size:13px;color:var(--muted)}
-.doc-sec{padding:16px 0;border-top:1px solid var(--line)}
-.doc-sec:first-of-type{padding-top:0;border-top:0}
-.doc-sec:last-child{padding-bottom:0}
-.doc-h{display:flex;align-items:baseline;justify-content:space-between;gap:14px}
-.doc-h h4{margin:0;font-size:10px;letter-spacing:.13em;font-weight:800;color:var(--muted);text-transform:uppercase}
-.doc-link{
-  border:0;background:none;cursor:pointer;padding:0;
-  font-size:11.5px;font-weight:700;color:var(--orange);opacity:0;transition:opacity .15s;
-}
-.doc-sec:hover .doc-link,.doc-link:focus-visible{opacity:1}
+.mf-entrada{margin:0 0 10px;font-size:12px;color:var(--ink2)}
 
-.doc-items{margin:10px 0 0}
-.doc-item{display:grid;grid-template-columns:minmax(0,34%) minmax(0,1fr);gap:14px;padding:6px 0}
-.doc-item dt{font-size:12.5px;font-weight:700;color:var(--ink2);overflow:hidden;text-overflow:ellipsis}
-.doc-item dd{margin:0;font-size:14px;line-height:1.5;color:var(--ink)}
-.doc-item.vacio dt{color:#B7B8BE;font-weight:600}
-.doc-item.vacio dd{color:#C3C4CA;font-style:italic;font-size:13px}
+/* los rasgos del Manifiesto: el nombre manda, la definición lo explica */
+.mf-rasgos{margin:0}
+.mf-rasgo{margin-bottom:8px}
+.mf-rasgo:last-child{margin-bottom:0}
+.mf-rasgo dt{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--orange-ink)}
+.mf-rasgo dd{margin:2px 0 0;font-size:12.5px;line-height:1.45;color:var(--ink)}
+
+/* la cita al Manifiesto va como apunte, no como una conducta más */
+.mf-nota{margin:11px 0 0;padding-left:10px;border-left:2px solid var(--line);
+  font-size:11.5px;line-height:1.45;color:var(--ink2)}
+
+.mf-estandar b{font-size:13px;font-weight:700;line-height:1.4}
+
+/* indicadores · procesos · políticas, en tres columnas como en los ejemplos */
+.mf-tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;
+  margin-top:13px;padding-top:13px;border-top:1px solid var(--line2)}
+
+@media (max-width:900px){
+  .manifiesto{padding:20px}
+  .mf-tres{grid-template-columns:minmax(0,1fr)}
+}
 
 .final-acciones{display:flex;align-items:center;gap:9px;margin-top:18px;flex-wrap:wrap}
-.final-acciones .panel-foot{margin:0 0 0 auto;text-align:right}
 .historial{list-style:none;margin:16px 0 0;padding:14px 0 0;border-top:1px solid var(--line)}
 .historial li{display:grid;grid-template-columns:150px 150px minmax(0,1fr);gap:12px;font-size:12.5px;
   padding:8px 0;border-bottom:1px solid var(--line2)}
@@ -489,19 +511,44 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 /* ---------------------------------------------------------------- *
  * 06 · imperativos
  * ---------------------------------------------------------------- */
+.sin-imps{margin:0;font-size:14px;line-height:1.5;color:var(--ink2)}
+.sin-imps b{color:var(--ink);font-weight:700}
+
+.imp-cuenta{font-size:11.5px;font-weight:600;white-space:nowrap}
+.imp-aviso{margin:0 0 14px;font-size:12.5px;font-weight:600;color:var(--red)}
+
 .imps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+/* mientras el modelo escribe, la mesa vacía se atenúa y no se puede tocar */
+.imps.esperando{opacity:.5;pointer-events:none}
 .imp{
-  display:grid;grid-template-columns:44px minmax(0,1.4fr) minmax(0,1fr) auto auto;gap:14px;align-items:center;
+  display:grid;grid-template-columns:auto 44px minmax(0,1.4fr) minmax(0,1fr) auto auto;gap:14px;align-items:center;
   border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff;
+  transition:border-color .15s,background .15s,box-shadow .15s;
 }
-.imp.activo{border-color:#FFD0BC;background:#FFFCFA}
+/* escrito pero todavía sin decidir: se distingue apenas */
+.imp.activo{border-color:#F0E4DE;background:#FEFCFB}
+
+/* elegido: es la decisión de la mesa, tiene que verse a distancia */
+.imp.elegido{border-color:var(--orange);background:var(--orange-soft);box-shadow:inset 3px 0 0 var(--orange)}
+.imp.elegido .imp-txt{color:var(--ink)}
+
+.imp-check{display:flex;align-items:center;justify-content:center;cursor:pointer}
+.imp-check input{width:19px;height:19px;accent-color:var(--orange);cursor:pointer;margin:0}
+
 .imp-n{
   width:44px;height:30px;border-radius:8px;background:var(--line2);color:#9A9BA2;
   font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;
 }
-.imp.activo .imp-n{background:var(--orange);color:#fff}
+.imp.activo .imp-n{background:#F3E7E1;color:var(--orange-ink)}
+.imp.elegido .imp-n{background:var(--orange);color:#fff}
+
 .imp-nombre{font-size:15px;font-weight:700}
-.imp-ev{font-size:11.5px;white-space:nowrap}
+/* el renglón en reposo: mismo tamaño que el campo, sin caja, para que abrir y
+   cerrar la edición no mueva la fila */
+.imp-txt{font-size:15px;font-weight:700;line-height:1.35;min-width:0;overflow-wrap:anywhere}
+.imp-txt.corto{font-size:13.5px;font-weight:600;color:var(--ink2)}
+.imp-txt.vacio{color:#BFC0C6;font-weight:500}
+.imp-editar{white-space:nowrap}
 
 /* ---------------------------------------------------------------- *
  * 07 · cuadrícula de conductas
@@ -592,9 +639,6 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 @media (max-width:1200px){
   .cols{grid-template-columns:minmax(0,1fr)}
   .asis{position:static;min-height:0}
-  .mapa{grid-template-columns:minmax(0,1fr)}
-  .doc-panel{position:static;max-height:none}
-  .doc-body{overflow:visible}
 }
 @media (max-width:900px){
   .topbar{padding:12px 20px;height:auto;grid-template-columns:minmax(0,1fr);justify-items:center;gap:10px}
@@ -604,8 +648,7 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
   .dos,.tres,.identidad{grid-template-columns:minmax(0,1fr)}
   .cec{grid-template-columns:minmax(0,1fr)}
   .side-tabs{flex-direction:row;flex-wrap:wrap}
-  .imp{grid-template-columns:44px minmax(0,1fr);row-gap:10px}
-  .doc-item{grid-template-columns:minmax(0,1fr);gap:2px}
+  .imp{grid-template-columns:auto 44px minmax(0,1fr);row-gap:10px}
   .cuadricula{display:flex;flex-direction:column}
   .historial li{grid-template-columns:minmax(0,1fr)}
   .modulos{flex-direction:column;padding:10px 20px}
@@ -615,6 +658,8 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
  * Impresión (Exportar PDF)
  * ---------------------------------------------------------------- */
 @media print{
+  /* el fondo de marca es de pantalla: en papel estorba y se va */
+  body{background:#fff !important}
   .topbar,.modulos,.tabs,.asis,.pie,.final-acciones{display:none !important}
   .scroll{overflow:visible}
   .hoja{padding:0;max-width:none}
@@ -632,6 +677,7 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .op-h{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;
   padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:18px}
 .op-h h2{margin:0;font-size:32px;font-weight:800;letter-spacing:-.03em}
+.op-logo{height:34px;width:auto;display:block}
 .op-h-r{text-align:right;display:flex;flex-direction:column;gap:3px}
 .op-h-sub{font-size:11px;color:var(--muted)}
 .op-h-sub b{color:var(--orange);font-weight:800}
@@ -684,7 +730,7 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .op-ind-n em{font-style:normal;font-weight:600;color:var(--muted);font-size:10px}
 .op-ind-f{font-size:10px;color:var(--muted)}
 
-.op-pie{display:flex;justify-content:space-between;gap:16px;margin-top:18px;padding-top:10px;
+.op-pie{display:flex;justify-content:flex-end;gap:16px;margin-top:18px;padding-top:10px;
   border-top:1px solid var(--line);font-size:9.5px;color:var(--muted)}
 .op-marca{font-weight:800;letter-spacing:.14em;color:var(--orange)}
 

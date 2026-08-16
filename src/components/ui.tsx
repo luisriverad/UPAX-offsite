@@ -185,8 +185,18 @@ export function FilaImperativo({ label, k, placeholder }: { label: string; k: st
  * Varios
  * ---------------------------------------------------------------- */
 
-export function Foot({ children }: { children: ReactNode }) {
-  return <p className="panel-foot">{children}</p>
+/**
+ * Cultura y Negocio se construyen con una columna por imperativo elegido. Sin
+ * elección no hay nada que dibujar, y una cuadrícula en blanco no lo explica.
+ */
+export function SinImperativos() {
+  return (
+    <section className="panel">
+      <p className="sin-imps">
+        Esta pantalla se construye con los imperativos elegidos. Ve a <b>Imperativos</b> y marca los que se quedan.
+      </p>
+    </section>
+  )
 }
 
 export function Btn({

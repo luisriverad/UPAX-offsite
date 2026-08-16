@@ -18,6 +18,8 @@ export const K = {
   impCount: 'imp.count',
   impNombre: (i: number) => `imp.${i}.nombre`,
   impCorto: (i: number) => `imp.${i}.corto`,
+  /** marcado = este imperativo es de los que se quedan */
+  impSel: (i: number) => `imp.${i}.sel`,
 
   condRows: 'cul.cond.rows',
   cond: (col: number, row: number) => `cul.cond.${col}.${row}`,
@@ -49,7 +51,8 @@ export const K = {
   pdvAlt: (campo: string) => `pdv.${campo}.alt`,
 } as const
 
-export const IMP_DEFAULT = 5
+/** La mesa de imperativos es siempre de diez: es lo que el modelo propone. */
+export const IMP_DEFAULT = 10
 export const COND_ROWS_DEFAULT = 3
 export const IND_DEFAULT = 3
 /** renglones que arrancan visibles en procesos críticos y políticas */
@@ -69,15 +72,32 @@ export interface Imperativo {
   i: number
   nombre: string
   corto: string
+  /** marcado en la 06 como uno de los que se quedan */
+  elegido: boolean
 }
 
+/** Todos los candidatos de la mesa de trabajo, elegidos o no. */
 export function imperativos(v: Values): Imperativo[] {
   const n = int(v, K.impCount, IMP_DEFAULT)
   return Array.from({ length: n }, (_, i) => ({
     i,
     nombre: g(v, K.impNombre(i)),
     corto: g(v, K.impCorto(i)),
+    elegido: g(v, K.impSel(i)) === '1',
   }))
+}
+
+/**
+ * Los que se quedan: solo los marcados en la 06. Sin marcar nada no hay columnas
+ * que construir, y eso es correcto — Cultura y Negocio cuelgan de la decisión,
+ * no de la mesa de trabajo.
+ *
+ * El índice es el original, así que lo capturado en Cultura y Negocio sigue
+ * colgando del mismo imperativo aunque se deseleccionen otros y vuelva a
+ * aparecer intacto si se remarca.
+ */
+export function seleccionados(v: Values): Imperativo[] {
+  return imperativos(v).filter((im) => im.elegido)
 }
 
 export interface Columna {
@@ -92,11 +112,11 @@ export interface Columna {
 }
 
 /**
- * Columnas de Cultura y Negocio: una por imperativo definido en la 06, con lo
+ * Columnas de Cultura y Negocio: una por imperativo ELEGIDO en la 06, con lo
  * que se haya escrito allá. Sin nombres todavía se muestran igual, numeradas.
  */
 export function columnas(v: Values): Columna[] {
-  return imperativos(v).map((im) => {
+  return seleccionados(v).map((im) => {
     const ordinal = `IMPERATIVO ${im.i + 1}`
     // el corto es el que cabe en un encabezado; el nombre completo manda al exportar
     const texto = im.corto || im.nombre

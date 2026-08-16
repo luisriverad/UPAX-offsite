@@ -5,15 +5,17 @@ import type { ModalMode } from './components/Modal'
 import Ejemplos from './components/Ejemplos'
 import { PANTALLAS } from './components/screens'
 import { MODULOS, SCREENS, firstOfModulo, firstOfTab, moduloDeTab, tabsDeModulo } from './data/screens'
-import { avancePreEvento, avanceTotal, herenciaOffsite } from './lib/model'
+import { avancePreEvento, avanceTotal, descargar, herenciaOffsite } from './lib/model'
 import { useStore } from './lib/store'
 
 export default function App() {
   const [actual, setActual] = useState(0)
   const [modal, setModal] = useState<ModalMode>(null)
   const [verEjemplos, setVerEjemplos] = useState(false)
-  const { values, reset, setMany } = useStore()
+  const { values, reset, setMany, guardar, guardadoEn, exportar, importar } = useStore()
   const main = useRef<HTMLDivElement>(null)
+  // qué dice el botón de guardar ahora mismo: 'guardado' | 'error' | null
+  const [avisoGuardado, setAvisoGuardado] = useState<'guardado' | 'error' | null>(null)
 
   const ir = useCallback((i: number) => {
     if (i < 0 || i >= SCREENS.length) return
@@ -51,15 +53,41 @@ export default function App() {
   // cada módulo se mide con lo suyo: el previo por evidencia levantada, el off-site por la matriz
   const avance = { pre: avancePreEvento(values), off: avanceTotal(values) }
 
-  // el módulo al que se pasa con "Siguiente", cuando la siguiente pantalla cambia de bloque
-  const proxima = SCREENS[actual + 1]
-  const cruce = proxima && moduloDeTab(proxima.tab) !== modulo ? MODULOS.find((m) => m.id === moduloDeTab(proxima.tab)) : null
+  /**
+   * El trabajo ya se autoguarda, pero en un proceso de varias sesiones eso no
+   * basta: hay que poder confirmarlo a voluntad y ver la hora del último
+   * guardado. El botón fuerza la escritura y dice si funcionó.
+   */
+  const onGuardar = useCallback(() => {
+    setAvisoGuardado(guardar() ? 'guardado' : 'error')
+    setTimeout(() => setAvisoGuardado(null), 2200)
+  }, [guardar])
+
+  // Cmd/Ctrl+S: el reflejo de todo el mundo para guardar
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        onGuardar()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onGuardar])
+
+  // 24 h a propósito: "21:24" cabe en el botón, "09:24 p.m." lo desborda
+  const horaGuardado = guardadoEn
+    ? new Date(guardadoEn).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false })
+    : null
 
   return (
     <div className="app">
       <header className="topbar">
         <span className="marca">
-          UPAX OFF-SITE · <b>ARQUITECTURA DE CULTURA</b>
+          <img className="marca-logo" src="/logo-upax.png" alt="Grupo UPAX" />
+          <span className="marca-txt">
+            OFF-SITE · <b>ARQUITECTURA DE CULTURA</b>
+          </span>
         </span>
 
         {/* el nombre del método, al centro: las iniciales resaltadas explican el acrónimo */}
@@ -75,6 +103,34 @@ export default function App() {
           <span className="avance">
             Pre-evento {avance.pre}% · Off-Site {avance.off}%
           </span>
+
+          {/* Guardar es lo primero: el resto de la barra son salidas, no el trabajo.
+              Va como control partido —guardar aquí, respaldo al lado— porque dos
+              botones sueltos ya no caben en una fila de 1512px y la parten en dos. */}
+          <span className="mini-par">
+            <button
+              type="button"
+              className={`mini mini-guardar ${avisoGuardado ?? ''}`}
+              onClick={onGuardar}
+              title={
+                horaGuardado
+                  ? `Último guardado a las ${horaGuardado}, en este navegador (⌘S)`
+                  : 'Guardar en este navegador (⌘S)'
+              }
+            >
+              {avisoGuardado === 'guardado' ? 'Guardado ✓' : avisoGuardado === 'error' ? 'No se guardó' : 'Guardar'}
+            </button>
+            <button
+              type="button"
+              className="mini mini-respaldo"
+              onClick={() => setModal('respaldo')}
+              title="Respaldo: descargar el trabajo o restaurarlo desde un archivo"
+              aria-label="Respaldo"
+            >
+              ⋯
+            </button>
+          </span>
+
           {/* la referencia va arriba, a la mano desde cualquier pantalla */}
           <button type="button" className="mini mini-ejemplos" onClick={() => setVerEjemplos(true)}>
             Ver ejemplos
@@ -133,20 +189,6 @@ export default function App() {
           </div>
 
           <footer className="pie">
-            <div className="pager">
-              <button type="button" className="btn btn-ghost" disabled={actual === 0} onClick={() => ir(actual - 1)}>
-                ← Anterior
-              </button>
-              <button
-                type="button"
-                className="btn btn-dark"
-                disabled={actual === SCREENS.length - 1}
-                onClick={() => ir(actual + 1)}
-              >
-                {/* pasar de un módulo al otro no es un paso más: se anuncia */}
-                {cruce ? `Empezar ${cruce.label} →` : 'Siguiente →'}
-              </button>
-            </div>
             <span className="folio">
               {screen.num} / {SCREENS.length}
             </span>
@@ -158,11 +200,17 @@ export default function App() {
 
       <Modal
         mode={modal}
+        guardadoEn={guardadoEn}
         onClose={() => setModal(null)}
         onConfirmar={() => {
           reset()
           setModal(null)
         }}
+        onDescargar={() => {
+          const hoy = new Date().toISOString().slice(0, 10)
+          descargar(`upax-arquitectura-${hoy}.json`, exportar(), 'application/json')
+        }}
+        onRestaurar={importar}
       />
     </div>
   )

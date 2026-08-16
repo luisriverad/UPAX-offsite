@@ -1,6 +1,6 @@
 import { COND_ROWS_DEFAULT, K, columnas } from '../../lib/model'
 import { useStore } from '../../lib/store'
-import { Field } from '../ui'
+import { Field, SinImperativos } from '../ui'
 
 export default function S07Conductas() {
   const { values, num, set } = useStore()
@@ -8,6 +8,8 @@ export default function S07Conductas() {
   const cols = columnas(values)
   const filas = num(K.condRows, COND_ROWS_DEFAULT)
   const agregarFila = () => set(K.condRows, String(filas + 1))
+
+  if (cols.length === 0) return <SinImperativos />
 
   return (
     <section className="panel">

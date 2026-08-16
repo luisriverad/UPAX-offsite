@@ -3,10 +3,9 @@ import { CAMPOS_PROPUESTA } from '../../data/content'
 import { K, archivosCargados, respuestasCeo, respuestasDG } from '../../lib/model'
 import { MOLDES_PDV } from '../../lib/redaccionPdv'
 import { useStore } from '../../lib/store'
-import { Chip, Field, Foot } from '../ui'
-import type { ScreenProps } from './tipos'
+import { Chip, Field } from '../ui'
 
-export default function S05Propuesta({ screen }: ScreenProps) {
+export default function S05Propuesta() {
   const { values, get } = useStore()
   const [abierto, setAbierto] = useState<string | null>(null)
 
@@ -53,8 +52,6 @@ export default function S05Propuesta({ screen }: ScreenProps) {
           )
         })}
       </div>
-
-      <Foot>{screen.foot}</Foot>
     </section>
   )
 }

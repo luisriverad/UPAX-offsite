@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { IND_DEFAULT, K, LISTA_DEFAULT, columnas, indicadoresDe, letraIndicador, listaDe } from '../../lib/model'
 import type { Values } from '../../types'
 import { useStore } from '../../lib/store'
-import { Chip, Field, Foot, Line, PillTabs } from '../ui'
-import type { ScreenProps } from './tipos'
+import { Chip, Field, Line, PillTabs, SinImperativos } from '../ui'
 
 /**
  * Negocio, un imperativo a la vez. Los cuatro bloques del Excel —estándares,
@@ -82,14 +81,14 @@ function BloqueLista({
   )
 }
 
-export default function S09Negocio({ screen }: ScreenProps) {
+export default function S09Negocio() {
   const { values, get, num, set } = useStore()
   const cols = columnas(values)
   const [col, setCol] = useState(0)
 
   // si en la 06 quitan imperativos, el seleccionado puede quedar fuera de rango
   const actual = cols.find((c) => c.i === col) ?? cols[0]
-  if (!actual) return null
+  if (!actual) return <SinImperativos />
 
   const n = num(K.indCount(actual.i), IND_DEFAULT)
   const indicadores = indicadoresDe(values, actual.i)
@@ -197,20 +196,17 @@ export default function S09Negocio({ screen }: ScreenProps) {
         />
       </div>
 
-      <div className="validacion">
-        <Chip tone="azul">VALIDACIÓN CRUZADA</Chip>
-        {avisos.length === 0 ? (
-          <span className="muted">Estándares, indicadores, procesos y políticas de este imperativo no muestran huecos.</span>
-        ) : (
+      {/* solo aparece cuando hay algo que señalar: decir "todo bien" es ruido */}
+      {avisos.length > 0 && (
+        <div className="validacion">
+          <Chip tone="azul">VALIDACIÓN CRUZADA</Chip>
           <ul className="avisos">
             {avisos.map((a) => (
               <li key={a}>{a}</li>
             ))}
           </ul>
-        )}
-      </div>
-
-      <Foot>{screen.foot}</Foot>
+        </div>
+      )}
     </section>
   )
 }

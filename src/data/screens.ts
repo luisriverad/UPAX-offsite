@@ -25,7 +25,7 @@ export const MODULOS: Modulo[] = [
 ]
 
 export const TABS: Tab[] = [
-  { id: 'mapa', label: 'Mapa', modulo: 'pre' },
+  { id: 'manifiesto', label: 'Manifiesto UPAX', modulo: 'pre' },
   { id: 'ceo', label: 'CEO', modulo: 'pre' },
   { id: 'dgs', label: 'DGs', modulo: 'pre' },
   { id: 'consolidado', label: 'Consolidado', modulo: 'pre' },
@@ -37,23 +37,17 @@ export const TABS: Tab[] = [
 ]
 
 /**
- * FUENTE DE VERDAD de la navegacion: las 12 pantallas del diseno funcional.
+ * FUENTE DE VERDAD de la navegacion: las pantallas del diseno funcional.
  * El indice del arreglo es el orden de recorrido; `tab` agrupa en la barra superior.
  */
 export const SCREENS: ScreenMeta[] = [
   {
-    id: 's01',
+    id: 's00',
     num: 1,
-    tab: 'mapa',
-    title: 'Matriz maestra',
-    foot: 'La matriz siempre muestra la última versión aprobada y permite abrir cada bloque para ver su evidencia y edición.',
+    tab: 'manifiesto',
+    title: 'Manifiesto UPAX',
     sinAsistente: true,
-    copi: [
-      'Prellenar desde entrevistas y archivos',
-      'Explicar de dónde salió cada texto',
-      'Comparar versiones y detectar huecos',
-      'Generar alternativas sin sobreescribir',
-    ],
+    copi: [],
   },
   {
     id: 's02',
@@ -89,7 +83,6 @@ export const SCREENS: ScreenMeta[] = [
     tab: 'consolidado',
     title: 'Consolidado de entrevistas y evidencia',
     sub: 'Una pantalla para ver qué dice el CEO, qué dicen los DGs y qué respaldan los archivos antes de redactar cualquier definición.',
-    foot: 'Clic en cualquier celda → abre respuesta original, transcripción o archivo que la respalda.',
     copi: [
       'Detectar coincidencias, diferencias y vacíos',
       'Separar hechos de opiniones',
@@ -103,7 +96,6 @@ export const SCREENS: ScreenMeta[] = [
     tab: 'propuesta',
     title: 'Construcción de la Propuesta de Valor',
     sub: 'Aquí se trabajan únicamente los tres campos del Excel: Para qué existimos, Promesa y Frase puente.',
-    foot: 'Referencia disponible dentro de cada campo: Walmart · Toyota · WPP · ejemplos del Excel.',
     sinAsistente: true,
     copi: [
       'Generar alternativas usando sólo evidencia cargada',
@@ -118,7 +110,6 @@ export const SCREENS: ScreenMeta[] = [
     tab: 'imperativos',
     title: 'Construcción de Imperativos Estratégicos',
     sub: 'La plataforma convierte la información previa en pocos imperativos claros y permite probar si realmente soportan la Propuesta de Valor.',
-    foot: 'Cada imperativo se convierte después en una columna de Cultura y Negocio, como en el Excel.',
     sinAsistente: true,
     copi: [
       'Agrupar ideas repetidas sin perder matices',
@@ -147,7 +138,6 @@ export const SCREENS: ScreenMeta[] = [
     tab: 'cultura',
     title: 'Cultura: prácticas corporativas y mecanismos de refuerzo',
     sub: 'La misma lógica del Excel: qué hacemos de forma repetible y qué mecanismos hacen que realmente ocurra.',
-    foot: 'El asistente puede sugerir, pero la plataforma obliga a que cada práctica y mecanismo quede asociado a un imperativo.',
     sinAsistente: true,
     copi: [
       'Proponer prácticas a partir de comportamientos aprobados',
@@ -162,7 +152,6 @@ export const SCREENS: ScreenMeta[] = [
     tab: 'negocio',
     title: 'Negocio: estándares, indicadores, procesos y políticas',
     sub: 'Los cuatro bloques de Negocio del Excel, un imperativo a la vez: el número que se exige, cómo se mide, qué proceso lo sostiene y qué regla gobierna la decisión.',
-    foot: 'Los cuatro bloques se leen juntos: un estándar sin indicador o una política sin proceso se detectan aquí, no al final.',
     sinAsistente: true,
     copi: [
       'Identificar números ya presentes en archivos',
@@ -177,7 +166,6 @@ export const SCREENS: ScreenMeta[] = [
     tab: 'final',
     title: 'Resultado final: matriz UPAX completada',
     sub: 'El proceso termina donde empezó: el Excel convertido en una arquitectura única, trazable y lista para exportar o seguir evolucionando.',
-    foot: 'Cada campo conserva: fuente · autor · archivo · versión · decisión final.',
     copi: [
       'Generar una síntesis ejecutiva del resultado',
       'Explicar la trazabilidad de cualquier definición',

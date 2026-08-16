@@ -1,6 +1,8 @@
-import { ARCHIVOS_DG, BLOQUE_UNIDAD, BLOQUES_CEO, DGS, UNIDADES } from '../data/content'
+import { ARCHIVOS_DG, BLOQUE_UNIDAD, BLOQUES_CEO, CAMPOS_PROPUESTA, DGS, UNIDADES } from '../data/content'
+import { IMPERATIVOS_MANIFIESTO, PDV_MANIFIESTO } from '../data/manifiesto'
 import type { AnalisisGrupo } from './asistenteEntrevista'
-import { K, unidadDe } from './model'
+import { EJEMPLOS_ARQUITECTURA } from '../data/ejemplos'
+import { IMP_DEFAULT, K, unidadDe } from './model'
 import { MOLDES_PDV, campoPdv, conArranque } from './redaccionPdv'
 import type { Values } from '../types'
 
@@ -65,6 +67,36 @@ export function evidencia(v: Values): string {
   return out.join('\n')
 }
 
+/**
+ * El modelo VIBE que UPAX ya trabajó (pestaña "Manifiesto UPAX"), en texto plano
+ * para el prompt. No es evidencia más: es el marco contra el que hay que
+ * contrastar lo que dicen las entrevistas antes de concluir nada.
+ */
+export function marcoVibe(): string {
+  const out: string[] = ['=== MODELO VIBE YA TRABAJADO POR UPAX ===', '', '-- V · PROPUESTA DE VALOR --']
+
+  PDV_MANIFIESTO.forEach((c) => out.push(`${c.tag.toUpperCase()}: ${c.texto}`))
+
+  IMPERATIVOS_MANIFIESTO.forEach((im) => {
+    out.push(
+      '',
+      `-- I · IMPERATIVO ${im.num}: ${im.nombre.toUpperCase()} (${im.bajada}) --`,
+      'B · CULTURA — cómo pensamos, decidimos y actuamos:',
+      ...im.cultura.rasgos.map((r) => `  ${r.nombre.toUpperCase()}: ${r.texto}`),
+      ...(im.cultura.nota ? [`  Nota del Manifiesto: ${im.cultura.nota}`] : []),
+      `  Prácticas corporativas: ${im.cultura.practicas.join(' ')}`,
+      `  Mecanismos de refuerzo: ${im.cultura.mecanismos.join(' ')}`,
+      'E · NEGOCIO:',
+      `  Estándar: ${im.negocio.estandar}`,
+      `  Indicadores críticos: ${im.negocio.indicadores.join(' ')}`,
+      `  Procesos críticos: ${im.negocio.procesos.join(' ')}`,
+      `  Políticas: ${im.negocio.politicas.join(' ')}`,
+    )
+  })
+
+  return out.join('\n')
+}
+
 /** Sin nada capturado no hay nada que sintetizar: se evita gastar la llamada. */
 export function hayEvidencia(v: Values): boolean {
   return evidencia(v).length > 0
@@ -79,10 +111,15 @@ const SISTEMA = [
   `de cultura de UPAX: grupo mexicano con ${UNIDADES.length} unidades de negocio (${UNIDADES.map((u) => u.nombre).join(', ')}).`,
   '',
   'Recibes las respuestas del CEO y de los directores de cada unidad a LAS MISMAS preguntas.',
+  'Recibes además el MODELO VIBE que UPAX ya trabajó: su propuesta de valor, sus imperativos estratégicos y, por imperativo, su cultura y su negocio.',
   'Tu entregable no es un reporte de lo que dijo cada quien: es la conclusión que el grupo va a adoptar.',
   '',
   'Cómo trabajas:',
   '- Lees todas las respuestas de un mismo tema y decides qué sostiene realmente la evidencia. Donde hay divergencia, tomas postura razonada en lugar de listar posturas.',
+  '- CONTRASTAS la evidencia contra el modelo VIBE ya trabajado antes de concluir. La evidencia dice qué está pasando; el modelo dice qué acordó UPAX que debía pasar. Tu conclusión se escribe sabiendo las dos cosas.',
+  '- El modelo VIBE no es una plantilla que haya que repetir ni una respuesta que haya que forzar: es el marco contra el cual se lee la evidencia. Nunca lo cites como si fuera algo que dijo un entrevistado.',
+  '- Cuando la evidencia confirma el modelo, la conclusión lo dice con las palabras del modelo y gana fuerza. Cuando la evidencia lo contradice o revela que no se está cumpliendo, mandas la evidencia y señalas la brecha: eso es un hallazgo, no un error que haya que suavizar.',
+  '- Cuando la evidencia toca algo que el modelo ya define —un imperativo, un rasgo de cultura, un estándar, un indicador, un proceso o una política—, lo conectas explícitamente en lugar de redactar en paralelo como si el modelo no existiera.',
   '- Escribes la conclusión como definición final del documento: en presente, afirmativa, sin condicionales ni "debería". Un director tiene que poder leerla en voz alta en el comité sin editarla.',
   '- Distingues una diferencia de énfasis de un desacuerdo real. Solo lo segundo es una decisión pendiente.',
   '- Rechazas el lenguaje genérico: "calidad", "excelencia", "sinergia", "clase mundial", "ser los mejores" no son conclusiones, son ruido. Si toda la evidencia es de ese tipo, lo dices en vez de maquillarlo.',
@@ -247,6 +284,9 @@ async function sintetizarLote(v: Values, pantalla: string, lote: Lote): Promise<
   const forma = reglasDeForma(lote)
 
   const instruccion = [
+    // el marco va primero: se lee la evidencia sabiendo contra qué se contrasta
+    marcoVibe(),
+    '',
     'EVIDENCIA RECOLECTADA',
     evidencia(v) || '(todavía no hay nada capturado)',
     '',
@@ -257,6 +297,8 @@ async function sintetizarLote(v: Values, pantalla: string, lote: Lote): Promise<
     '',
     'TAREA',
     'Para cada clave, analiza TODAS las respuestas del tema —la del CEO y la de cada unidad a la misma pregunta— y entrega tu conclusión.',
+    'Antes de redactar, contrasta esas respuestas contra el MODELO VIBE de arriba: qué lo confirma, qué lo contradice y qué el modelo ya define y la evidencia todavía no alcanza.',
+    'En `base`, además del respaldo de las entrevistas, di si la conclusión se apoya en el modelo VIBE o se aparta de él. En `tension`, una brecha entre lo que el modelo declara y lo que la evidencia muestra cuenta como decisión pendiente.',
     'La sintesis se guarda tal cual en el documento: escríbela como la frase que UPAX adopta, no como comentario sobre las entrevistas ni como recuento de posturas.',
     'Si el campo ya tiene texto, evalúalo contra la evidencia y propón la versión que la evidencia sostiene, aunque contradiga lo escrito.',
     'Sé breve: sintesis una o dos frases, base una, tension como mucho dos.',
@@ -333,6 +375,108 @@ export async function sintetizar(
   }
 
   return { campos, omitidos, fallidos }
+}
+
+/* ------------------------------------------------------------------ *
+ * Proponer imperativos
+ * ------------------------------------------------------------------ */
+
+export interface ImperativoPropuesto {
+  nombre: string
+  corto: string
+}
+
+const ESQUEMA_IMPERATIVOS = {
+  type: 'object',
+  properties: {
+    imperativos: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          nombre: {
+            type: 'string',
+            description:
+              'El imperativo redactado como lo que UPAX tiene que lograr excepcionalmente bien. Una frase, en presente, concreta y verificable. No un valor ni una aspiración.',
+          },
+          corto: {
+            type: 'string',
+            description:
+              'Una o dos palabras que lo nombren, para usarlo como encabezado de columna. En mayúscula inicial, sin punto final.',
+          },
+        },
+        required: ['nombre', 'corto'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['imperativos'],
+  additionalProperties: false,
+} as const
+
+/**
+ * Las tres arquitecturas de "Ver ejemplos", en texto. Son el ancla de nivel: sin
+ * ellas el modelo escribe consignas de cartel en vez de imperativos.
+ */
+function ejemplosDeReferencia(): string {
+  const out: string[] = ['=== ARQUITECTURAS DE REFERENCIA (cómo se escribe un imperativo) ===']
+  EJEMPLOS_ARQUITECTURA.forEach((e) => {
+    out.push(
+      '',
+      `${e.empresa} — existe para: ${e.existimos} Promesa: “${e.promesa}”`,
+      ...e.imperativos.map((im) => `  · ${im.nombre} → estándar: ${im.estandar}`),
+    )
+  })
+  return out.join('\n')
+}
+
+/**
+ * Los candidatos que el grupo va a discutir en la mesa. El modelo no decide
+ * cuáles quedan —eso se marca a mano en la pantalla—, así que aquí conviene
+ * cubrir el espacio: propuestas distintas entre sí, no diez versiones de dos.
+ */
+export async function proponerImperativos(v: Values): Promise<ImperativoPropuesto[]> {
+  // lo que el grupo ya redactó en la 05 pesa más que el marco: es su versión
+  const capturados = CAMPOS_PROPUESTA.map((c) => {
+    const texto = g(v, K.pdv(c.id))
+    return texto ? `${c.tag}: ${texto}` : ''
+  }).filter(Boolean)
+
+  const instruccion = [
+    marcoVibe(),
+    '',
+    ejemplosDeReferencia(),
+    '',
+    'EVIDENCIA RECOLECTADA',
+    evidencia(v) || '(todavía no hay nada capturado)',
+    '',
+    ...(capturados.length ? ['PROPUESTA DE VALOR YA REDACTADA EN LA PLATAFORMA', ...capturados, ''] : []),
+    'TAREA',
+    `Propón exactamente ${IMP_DEFAULT} imperativos estratégicos candidatos para UPAX.`,
+    'Un imperativo es lo que UPAX tiene que lograr excepcionalmente bien para sostener su propuesta de valor. No es un valor, no es una iniciativa y no es un deseo.',
+    '',
+    'DE DÓNDE SALEN, EN ESTE ORDEN:',
+    `1. Del MODELO VIBE de arriba: los ${IMPERATIVOS_MANIFIESTO.length} que UPAX ya trabajó van incluidos, redactados a la luz de lo que se levantó en las entrevistas. No los reinventes ni los renombres por variar.`,
+    '2. De la evidencia: lo que las entrevistas y los archivos exigen y el modelo todavía no cubre.',
+    '3. De las arquitecturas de referencia: úsalas para calibrar el NIVEL de concreción y la forma de redactar, no para importar su contenido. UPAX no es una armadora ni una cadena de autoservicio; un imperativo de Toyota copiado tal cual es un error.',
+    '',
+    'Si no hay evidencia suficiente para llegar a diez, extiende desde el modelo VIBE y desde la propuesta de valor de UPAX: prefiere un imperativo derivado de lo que UPAX ya declaró antes que uno inventado.',
+    `Los ${IMP_DEFAULT} son candidatos para que el grupo elija en vivo: cubre el espacio en vez de repetirte. Dos propuestas que se resuelven con la misma decisión son una sola.`,
+    'Ordénalos de más a menos respaldado por la evidencia; los que ya están en el modelo VIBE y la evidencia confirma van primero.',
+    'Nada de lenguaje genérico: "excelencia", "sinergia", "ser los mejores" no son imperativos.',
+  ].join('\n')
+
+  const data = (await llamar(SISTEMA, instruccion, ESQUEMA_IMPERATIVOS)) as {
+    imperativos?: { nombre: string; corto: string }[]
+  }
+
+  const propuestos = (data.imperativos ?? [])
+    .map((im) => ({ nombre: (im?.nombre ?? '').trim(), corto: (im?.corto ?? '').trim() }))
+    .filter((im) => im.nombre)
+    .slice(0, IMP_DEFAULT)
+
+  if (!propuestos.length) throw new ErrorIA('El modelo no devolvió ningún imperativo utilizable.')
+  return propuestos
 }
 
 /* ------------------------------------------------------------------ *
