@@ -68,6 +68,43 @@ La llamada pasa por el proxy de Vite (`/api/anthropic`), definido en `vite.confi
 
 ---
 
+## Archivos de los DGs (Supabase Storage)
+
+Dos cosas se guardan en un bucket privado de Supabase, ambas por unidad de negocio:
+
+- **Los cinco entregables** de *ARCHIVOS A PEDIR* (pantalla 03). Antes solo se guardaba el nombre; ahora el archivo queda almacenado y se abre desde la misma casilla.
+- **El PDF de entrevista contestado** que se sube en *ENTREVISTA A DISTANCIA* (pantallas 02 y 03). Antes se leían sus respuestas y el archivo se descartaba: no quedaba el original de lo que cada quien contestó.
+
+1. Crea un proyecto en [supabase.com](https://supabase.com).
+2. Abre **SQL Editor** y corre `supabase/schema.sql`: crea el bucket `dg-archivos` y sus políticas de acceso.
+3. En **Project Settings → API** copia la URL del proyecto y la llave `anon`.
+4. Ponlas en `.env.local` como `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
+5. Reinicia `npm run dev`. En Vercel, las mismas dos variables van en **Settings → Environment Variables** (con el prefijo `VITE_` para que lleguen al navegador).
+
+Cómo queda organizado el bucket:
+
+```
+dg-archivos/
+  unidad-1/0-1755712345678-plan-2027.pdf                 ← Research Land, primera casilla
+  unidad-1/2-1755712400000-organigrama.pdf
+  unidad-3/0-1755712500000-presupuesto.xlsx              ← Promo Espacio
+  entrevistas/ceo/1755712600000-upax-entrevista-ceo.pdf
+  entrevistas/unidad-3/1755712700000-upax-entrevista-promo-espacio.pdf
+```
+
+En los entregables el índice al frente es la casilla de **ARCHIVOS A PEDIR**, así que el bucket se lee de corrido sin cruzarlo contra la app. El sufijo de tiempo evita que resubir el mismo nombre pise la versión anterior.
+
+Las entrevistas van aparte porque la zona de subida acepta **varios PDFs a la vez**: cada archivo se guarda bajo la unidad que declara él mismo en sus metadatos, no bajo la pestaña abierta. Si el PDF perdió los metadatos —hay editores que reescriben el `Subject` al guardar—, se deduce de las llaves que trae; si mezcla unidades y no se puede deducir, se archiva en la pestaña donde se soltó.
+
+Detalles que conviene saber:
+
+- El bucket es **privado**. La app abre cada archivo con una URL firmada que dura una hora, así que la liga no se puede repartir.
+- Tope de **25 MB** por archivo, validado en el navegador y en el bucket.
+- **Sin las variables la app no se rompe**: sigue registrando el nombre del archivo como antes, el PDF contestado sigue volcando sus respuestas al store, y *Revisar archivos* avisa cuál quedó sin subir.
+- **No hay login todavía**: quien alcance la llave anon puede tocar el bucket. Si los entregables no pueden quedar así, hay que montar Supabase Auth y cambiar `to anon` por `to authenticated` en las políticas de `supabase/schema.sql`.
+
+---
+
 ## Estructura
 
 ```
@@ -76,6 +113,8 @@ src/
     screens.ts        ← las 12 pantallas y las 10 pestañas
     content.ts        ← matriz, preguntas, archivos, temas y campos
   lib/
+    supabase.ts       ← cliente de Supabase (solo Storage)
+    archivosRemotos.ts← subir / abrir / borrar los entregables de los DGs
     store.tsx         ← estado global + autoguardado en localStorage
     model.ts          ← imperativos, conteos, estados, avance y exportación
     ai.ts             ← prompt y llamada del asistente (modelo de Anthropic)

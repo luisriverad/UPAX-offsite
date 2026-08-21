@@ -1,5 +1,6 @@
 import { ARCHIVOS_DG, DGS } from '../data/content'
 import { K, unidadDe } from './model'
+import { haySupabase } from './supabase'
 import type { Values } from '../types'
 
 /**
@@ -15,6 +16,8 @@ export interface Adjunto {
   nombre: string
   bytes: number
   tipo: string
+  /** ruta dentro del bucket de Supabase; vacía si el archivo no llegó a subirse */
+  ruta?: string
 }
 
 /** Lee un adjunto del store; tolera el formato viejo, que era sólo el nombre. */
@@ -24,7 +27,12 @@ export function leerAdjunto(bruto: string): Adjunto | null {
   try {
     const j = JSON.parse(t) as Partial<Adjunto>
     if (j && typeof j.nombre === 'string') {
-      return { nombre: j.nombre, bytes: Number(j.bytes) || 0, tipo: String(j.tipo ?? '') }
+      return {
+        nombre: j.nombre,
+        bytes: Number(j.bytes) || 0,
+        tipo: String(j.tipo ?? ''),
+        ruta: typeof j.ruta === 'string' ? j.ruta : undefined,
+      }
     }
   } catch {
     /* formato viejo */
@@ -97,6 +105,12 @@ export function revisarArchivos(v: Values, dg: number): Revision {
     const n = normaliza(a.nombre)
     if (!pedido.pistas.some((p) => n.includes(p))) {
       problemas.push('el nombre del archivo no se parece a lo que se pidió; verifica que no esté en la casilla equivocada')
+    }
+
+    // con Supabase encendido, una ficha sin ruta es un archivo que se quedó
+    // en la laptop de alguien: la casilla se ve llena y no hay nada que abrir
+    if (haySupabase() && !a.ruta) {
+      problemas.push('quedó registrado el nombre pero el archivo no se subió; vuelve a adjuntarlo')
     }
 
     if (a.bytes && a.bytes < MINIMO_BYTES) {

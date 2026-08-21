@@ -43,6 +43,9 @@ export const K = {
   dgArch: (n: number, a: number) => `dg.${n}.arch.${a}`,
   dgUnidad: (n: number) => `dg.${n}.unidad`,
   dgPersona: (n: number) => `dg.${n}.persona`,
+  /** ficha del PDF de entrevista contestado que se subió, con su ruta en Supabase */
+  dgPdf: (n: number) => `dg.${n}.pdf`,
+  ceoPdf: 'cec.pdf',
 
   cons: (vista: string, tema: string) => `cons.${vista}.${tema}`,
 

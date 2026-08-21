@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
 import { ARCHIVOS_DG, BLOQUE_UNIDAD, BLOQUES_DG, DGS } from '../../data/content'
 import { K, respuestasDeDG, unidadDe } from '../../lib/model'
+import { borrarArchivo, subirArchivo, urlDeArchivo } from '../../lib/archivosRemotos'
 import { guardarAdjunto, leerAdjunto, pesoLegible, revisarArchivos } from '../../lib/revisionArchivos'
 import type { Revision } from '../../lib/revisionArchivos'
+import { haySupabase } from '../../lib/supabase'
 import { useStore } from '../../lib/store'
 import PdfEntrevista from '../PdfEntrevista'
 import { Field, Line, PillTabs } from '../ui'
@@ -100,7 +102,9 @@ export default function S03Dgs() {
           <ul className="archivos">
             {ARCHIVOS_DG.map((pedido, i) => (
               <FilaArchivo
-                key={pedido.nombre}
+                key={`${dg}-${pedido.nombre}`}
+                dg={dg}
+                casilla={i}
                 nombre={pedido.nombre}
                 detalle={pedido.detalle}
                 bruto={get(K.dgArch(dg, i))}
@@ -163,25 +167,63 @@ function Diagnostico({ revision }: { revision: Revision }) {
 }
 
 function FilaArchivo({
+  dg,
+  casilla,
   nombre,
   detalle,
   bruto,
   onCambio,
 }: {
+  dg: number
+  casilla: number
   nombre: string
   detalle: string
   bruto: string
   onCambio: (valor: string) => void
 }) {
   const input = useRef<HTMLInputElement>(null)
+  const [subiendo, setSubiendo] = useState(false)
+  const [error, setError] = useState('')
   const adjunto = leerAdjunto(bruto)
+
+  // el archivo vive en el bucket; para verlo hay que pedir la URL firmada al
+  // momento de abrirlo, porque caduca y no tiene caso guardarla en el store
+  const abrir = async () => {
+    if (!adjunto?.ruta) return
+    setError('')
+    const url = await urlDeArchivo(adjunto.ruta)
+    if (url) window.open(url, '_blank', 'noopener')
+    else setError('No se pudo abrir el archivo.')
+  }
+
+  const quitar = async () => {
+    const ruta = adjunto?.ruta
+    onCambio('')
+    setError('')
+    if (ruta) await borrarArchivo(ruta)
+  }
+
+  const recibir = async (f: File) => {
+    setError('')
+    // la ficha se escribe primero: aunque la subida falle, queda constancia de
+    // qué entregó el DG, que es como funcionaba antes de Supabase
+    onCambio(guardarAdjunto({ nombre: f.name, bytes: f.size, tipo: f.type }))
+    if (!haySupabase()) return
+
+    setSubiendo(true)
+    const r = await subirArchivo(dg, casilla, f)
+    setSubiendo(false)
+    if (r.ok) onCambio(guardarAdjunto({ nombre: f.name, bytes: f.size, tipo: f.type, ruta: r.ruta }))
+    else setError(r.error ?? 'No se pudo subir el archivo.')
+  }
 
   return (
     <li className={`archivo ${adjunto ? 'ok' : ''}`}>
       <button
         type="button"
         className="mas"
-        onClick={() => (adjunto ? onCambio('') : input.current?.click())}
+        disabled={subiendo}
+        onClick={() => (adjunto ? void quitar() : input.current?.click())}
         title={adjunto ? 'Quitar archivo' : 'Adjuntar archivo'}
       >
         {adjunto ? '×' : '+'}
@@ -189,12 +231,20 @@ function FilaArchivo({
       <span className="archivo-t">
         {nombre}
         <em className="archivo-d">{detalle}</em>
-        {adjunto && (
-          <em className="archivo-n">
-            {adjunto.nombre}
-            {adjunto.bytes ? ` · ${pesoLegible(adjunto.bytes)}` : ''}
-          </em>
-        )}
+        {adjunto &&
+          (adjunto.ruta ? (
+            <button type="button" className="archivo-n enlace" onClick={() => void abrir()}>
+              {adjunto.nombre}
+              {adjunto.bytes ? ` · ${pesoLegible(adjunto.bytes)}` : ''}
+            </button>
+          ) : (
+            <em className="archivo-n">
+              {adjunto.nombre}
+              {adjunto.bytes ? ` · ${pesoLegible(adjunto.bytes)}` : ''}
+              {subiendo ? ' · subiendo…' : haySupabase() && !error ? ' · sin subir' : ''}
+            </em>
+          ))}
+        {error && <em className="archivo-err">{error}</em>}
       </span>
       <input
         ref={input}
@@ -202,7 +252,7 @@ function FilaArchivo({
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0]
-          if (f) onCambio(guardarAdjunto({ nombre: f.name, bytes: f.size, tipo: f.type }))
+          if (f) void recibir(f)
           e.target.value = ''
         }}
       />

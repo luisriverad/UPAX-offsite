@@ -1,7 +1,14 @@
 import { useRef, useState } from 'react'
+import { subirEntrevista, urlDeArchivo } from '../lib/archivosRemotos'
+import { K } from '../lib/model'
 import { descargarPdf, generarPdfEntrevista, leerPdfEntrevista, nombrePdf, PdfInvalido } from '../lib/pdfEntrevista'
 import type { Destinatario } from '../lib/pdfEntrevista'
+import { guardarAdjunto, leerAdjunto, pesoLegible } from '../lib/revisionArchivos'
 import { useStore } from '../lib/store'
+import { haySupabase } from '../lib/supabase'
+
+/** La ficha del PDF contestado se guarda en la llave de quien contestó. */
+const claveDe = (dest: Destinatario) => (dest.tipo === 'ceo' ? K.ceoPdf : K.dgPdf(dest.id))
 
 /**
  * Entrevista a distancia: bajar el guion como PDF editable, mandarlo, y subir
@@ -13,11 +20,14 @@ import { useStore } from '../lib/store'
  * es, así que se pueden soltar todos juntos sin ordenarlos.
  */
 export default function PdfEntrevista({ dest }: { dest: Destinatario }) {
-  const { values, set } = useStore()
+  const { values, get, set } = useStore()
   const input = useRef<HTMLInputElement>(null)
   const [encima, setEncima] = useState(false)
   const [ocupado, setOcupado] = useState(false)
   const [aviso, setAviso] = useState<{ tono: 'ok' | 'error'; texto: string } | null>(null)
+
+  // el último PDF contestado que quedó archivado para este entrevistado
+  const archivado = leerAdjunto(get(claveDe(dest)))
 
   const bajar = async () => {
     setOcupado(true)
@@ -29,6 +39,22 @@ export default function PdfEntrevista({ dest }: { dest: Destinatario }) {
     } finally {
       setOcupado(false)
     }
+  }
+
+  /** Sube el PDF a Storage y deja su ficha en el store. false si no quedó guardado. */
+  const guardarPdf = async (suyo: Destinatario, file: File): Promise<boolean> => {
+    if (!haySupabase()) return false
+    const r = await subirEntrevista(suyo, file)
+    if (!r.ok) return false
+    set(claveDe(suyo), guardarAdjunto({ nombre: file.name, bytes: file.size, tipo: 'application/pdf', ruta: r.ruta }))
+    return true
+  }
+
+  const abrirGuardado = async () => {
+    if (!archivado?.ruta) return
+    const url = await urlDeArchivo(archivado.ruta)
+    if (url) window.open(url, '_blank', 'noopener')
+    else setAviso({ tono: 'error', texto: 'No se pudo abrir el PDF guardado.' })
   }
 
   const subir = async (files: FileList | null) => {
@@ -49,7 +75,13 @@ export default function PdfEntrevista({ dest }: { dest: Destinatario }) {
         // se aplica llave por llave: lo que el PDF no traiga, se queda como está
         for (const [clave, texto] of Object.entries(lectura.respuestas)) set(clave, texto)
         const n = Object.keys(lectura.respuestas).length
-        bien.push(`${lectura.quien}: ${n} de ${lectura.campos} respondidas`)
+
+        // el archivo se archiva bajo la unidad que declara el propio PDF, no la
+        // pestaña abierta: aquí se pueden soltar varios de unidades distintas
+        const suyo = lectura.dest ?? dest
+        const guardado = await guardarPdf(suyo, file)
+        bien.push(`${lectura.quien}: ${n} de ${lectura.campos} respondidas${guardado ? '' : ' (sin archivar)'}`)
+        if (!guardado && haySupabase()) mal.push(`${file.name}: se leyó, pero no se pudo guardar el archivo.`)
       } catch (e) {
         mal.push(e instanceof PdfInvalido ? e.message : `${file.name}: no se pudo leer.`)
       }
@@ -94,6 +126,16 @@ export default function PdfEntrevista({ dest }: { dest: Destinatario }) {
         <b>{ocupado ? 'Leyendo…' : 'Subir PDF contestado'}</b>
         <em>Arrastra aquí el archivo que te regresaron, o haz clic para buscarlo. Puedes soltar varios.</em>
       </div>
+
+      {archivado?.ruta && (
+        <p className="pdfent-guardado">
+          Archivado:{' '}
+          <button type="button" className="enlace" onClick={() => void abrirGuardado()}>
+            {archivado.nombre}
+            {archivado.bytes ? ` · ${pesoLegible(archivado.bytes)}` : ''}
+          </button>
+        </p>
+      )}
 
       {aviso && <p className={`pdfent-aviso ${aviso.tono}`}>{aviso.texto}</p>}
 

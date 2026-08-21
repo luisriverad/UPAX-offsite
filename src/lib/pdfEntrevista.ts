@@ -264,6 +264,12 @@ export interface LecturaPdf {
   respuestas: Values
   /** cuántos campos traía el documento, contestados o no */
   campos: number
+  /**
+   * De quién es el PDF según él mismo, no según la pantalla donde se soltó:
+   * la zona acepta varios archivos juntos y cada uno puede ser de otra unidad.
+   * null cuando el documento no lo dice y tampoco se deduce de sus campos.
+   */
+  dest: Destinatario | null
 }
 
 export class PdfInvalido extends Error {}
@@ -278,7 +284,7 @@ export async function leerPdfEntrevista(file: File): Promise<LecturaPdf> {
     throw new PdfInvalido(`${file.name}: no se pudo abrir, ¿es un PDF?`)
   }
 
-  let meta: { marca?: string; quien?: string } = {}
+  let meta: { marca?: string; quien?: string; tipo?: string; id?: number | null } = {}
   try {
     meta = JSON.parse(doc.getSubject() || '{}')
   } catch {
@@ -309,5 +315,33 @@ export async function leerPdfEntrevista(file: File): Promise<LecturaPdf> {
     )
   }
 
-  return { archivo: file.name, quien: meta.quien || 'entrevista', respuestas, campos: propios }
+  return {
+    archivo: file.name,
+    quien: meta.quien || 'entrevista',
+    respuestas,
+    campos: propios,
+    dest: destDeLectura(meta, respuestas),
+  }
+}
+
+/**
+ * Los metadatos mandan; si el PDF los perdió —hay editores que reescriben el
+ * Subject al guardar—, se deduce de las llaves que trae: todas las de un DG
+ * empiezan con `dg.<n>.`, y las del CEO con el prefijo de su guion.
+ */
+function destDeLectura(
+  meta: { tipo?: string; id?: number | null },
+  respuestas: Values,
+): Destinatario | null {
+  if (meta.tipo === 'ceo') return { tipo: 'ceo' }
+  if (meta.tipo === 'dg' && Number.isFinite(Number(meta.id))) return { tipo: 'dg', id: Number(meta.id) }
+
+  const claves = Object.keys(respuestas)
+  const ids = new Set(
+    claves.map((k) => /^dg\.(\d+)\./.exec(k)?.[1]).filter((n): n is string => Boolean(n)),
+  )
+  // si el archivo mezcla unidades no se adivina: mejor no guardarlo mal archivado
+  if (ids.size === 1) return { tipo: 'dg', id: Number([...ids][0]) }
+  if (ids.size === 0 && claves.some((k) => k.startsWith('cec.'))) return { tipo: 'ceo' }
+  return null
 }
