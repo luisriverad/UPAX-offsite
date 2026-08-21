@@ -12,7 +12,7 @@ export default function App() {
   const [actual, setActual] = useState(0)
   const [modal, setModal] = useState<ModalMode>(null)
   const [verEjemplos, setVerEjemplos] = useState(false)
-  const { values, reset, setMany, guardar, guardadoEn, exportar, importar } = useStore()
+  const { values, reset, setMany, guardar, guardadoEn, nube, sincronizando, exportar, importar } = useStore()
   const main = useRef<HTMLDivElement>(null)
   // qué dice el botón de guardar ahora mismo: 'guardado' | 'error' | null
   const [avisoGuardado, setAvisoGuardado] = useState<'guardado' | 'error' | null>(null)
@@ -112,13 +112,26 @@ export default function App() {
               type="button"
               className={`mini mini-guardar ${avisoGuardado ?? ''}`}
               onClick={onGuardar}
+              disabled={sincronizando}
               title={
-                horaGuardado
-                  ? `Último guardado a las ${horaGuardado}, en este navegador (⌘S)`
-                  : 'Guardar en este navegador (⌘S)'
+                sincronizando
+                  ? 'Sincronizando la sesión compartida…'
+                  : horaGuardado
+                    ? nube
+                      ? `Último guardado a las ${horaGuardado} (sesión compartida en la nube · ⌘S)`
+                      : `Último guardado a las ${horaGuardado}, en este navegador (⌘S)`
+                    : nube
+                      ? 'Guardar en la sesión compartida (⌘S)'
+                      : 'Guardar en este navegador (⌘S)'
               }
             >
-              {avisoGuardado === 'guardado' ? 'Guardado ✓' : avisoGuardado === 'error' ? 'No se guardó' : 'Guardar'}
+              {sincronizando
+                ? 'Sincronizando…'
+                : avisoGuardado === 'guardado'
+                  ? 'Guardado ✓'
+                  : avisoGuardado === 'error'
+                    ? 'No se guardó'
+                    : 'Guardar'}
             </button>
             <button
               type="button"

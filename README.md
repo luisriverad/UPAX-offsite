@@ -68,18 +68,18 @@ La llamada pasa por el proxy de Vite (`/api/anthropic`), definido en `vite.confi
 
 ---
 
-## Archivos de los DGs (Supabase Storage)
+## Supabase (archivos + sesión compartida)
 
-Dos cosas se guardan en un bucket privado de Supabase, ambas por unidad de negocio:
+Con Supabase configurado, la app hace dos cosas en la nube:
 
-- **Los cinco entregables** de *ARCHIVOS A PEDIR* (pantalla 03). Antes solo se guardaba el nombre; ahora el archivo queda almacenado y se abre desde la misma casilla.
-- **El PDF de entrevista contestado** que se sube en *ENTREVISTA A DISTANCIA* (pantallas 02 y 03). Antes se leían sus respuestas y el archivo se descartaba: no quedaba el original de lo que cada quien contestó.
+- **Storage (`dg-archivos`)**: los cinco entregables de *ARCHIVOS A PEDIR* (pantalla 03) y el PDF de entrevista contestado (pantallas 02 y 03).
+- **Tabla `app_state` (opción A)**: **una sola sesión compartida**. Todo el store (respuestas, imperativos, consolidado, etc.) vive en una fila `id = 'default'`. Cualquier dispositivo con la app abierta ve y edita lo mismo; `localStorage` queda como caché.
 
-1. Crea un proyecto en [supabase.com](https://supabase.com).
-2. Abre **SQL Editor** y corre `supabase/schema.sql`: crea el bucket `dg-archivos` y sus políticas de acceso.
-3. En **Project Settings → API** copia la URL del proyecto y la llave `anon`.
+1. Crea un proyecto en [supabase.com](https://supabase.com) (o usa el que ya tengas).
+2. Abre **SQL Editor** y corre **todo** `supabase/schema.sql`: bucket, políticas, tabla `app_state` y Realtime.
+3. En **Project Settings → API** copia la URL y la llave `anon` (nunca la `service_role` en el front).
 4. Ponlas en `.env.local` como `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
-5. Reinicia `npm run dev`. En Vercel, las mismas dos variables van en **Settings → Environment Variables** (con el prefijo `VITE_` para que lleguen al navegador).
+5. Reinicia `npm run dev`. En Vercel, las mismas dos variables van en **Settings → Environment Variables** y hay que **redeploy**.
 
 Cómo queda organizado el bucket:
 
@@ -113,9 +113,10 @@ src/
     screens.ts        ← las 12 pantallas y las 10 pestañas
     content.ts        ← matriz, preguntas, archivos, temas y campos
   lib/
-    supabase.ts       ← cliente de Supabase (solo Storage)
+    supabase.ts       ← cliente de Supabase (Storage + app_state)
+    appState.ts       ← cargar / guardar / Realtime de la sesión compartida
     archivosRemotos.ts← subir / abrir / borrar los entregables de los DGs
-    store.tsx         ← estado global + autoguardado en localStorage
+    store.tsx         ← estado global + sync nube + caché localStorage
     model.ts          ← imperativos, conteos, estados, avance y exportación
     ai.ts             ← prompt y llamada del asistente (modelo de Anthropic)
   components/
@@ -158,7 +159,12 @@ Todo vive en `src/lib/pdfEntrevista.ts` y `src/components/PdfEntrevista.tsx`. Si
 
 ## Datos de la sesión
 
-Se guardan solos en `localStorage` con la llave `upax_arquitectura_v2`. En la barra superior están **Exportar** e **Importar** (JSON completo) y **Limpiar**. En la pantalla 12 hay además **Exportar PDF** (impresión), **Exportar Excel** (CSV) e **Historial de versiones**.
+- **Con Supabase**: la fuente de verdad es la fila `app_state` (`default`). Al abrir, la app carga esa sesión; al editar, sincroniza con debounce (~0,7 s) y por Realtime. `localStorage` (`upax_arquitectura_v2`) es caché offline/arranque.
+- **Sin Supabase**: solo `localStorage` (comportamiento anterior).
+
+En la barra superior: **Guardar**, respaldo **Exportar/Importar** JSON y **Limpiar**. En la pantalla 12: **Exportar PDF**, **Exportar Excel** e **Historial de versiones**.
+
+Si la nube está vacía y este navegador ya tenía captura, la primera carga **siembra** ese contenido en `app_state` para no perderlo.
 
 ---
 

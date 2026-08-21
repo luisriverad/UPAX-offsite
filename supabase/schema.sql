@@ -1,11 +1,17 @@
--- Almacenamiento de los archivos que entregan los DGs (pantalla 03).
--- Se corre una sola vez en el SQL Editor del proyecto de Supabase.
+-- UPAX Off-Site · esquema Supabase
+-- Se corre una sola vez en el SQL Editor del proyecto.
 --
--- Solo se usa Storage: el estado de la app sigue en localStorage. Aquí no hay
--- tablas de negocio, únicamente el bucket y quién puede tocarlo.
+-- 1) Storage: archivos de los DGs y PDFs de entrevista (bucket privado).
+-- 2) app_state: una sola fila compartida con TODO el store de la app
+--    (opción A: todos los dispositivos ven y editan la misma sesión).
+--
+-- Sin login: quien tenga la llave anon puede leer/escribir. Aceptable mientras
+-- la URL sea interna. Si eso no basta, hay que montar Auth.
 
--- 1. El bucket. Privado: los archivos no se sirven por URL pública, se abren
---    con URLs firmadas de una hora que pide la app.
+/* ------------------------------------------------------------------ *
+ * Storage · entregables y PDFs
+ * ------------------------------------------------------------------ */
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'dg-archivos',
@@ -27,14 +33,6 @@ on conflict (id) do update
   set public = excluded.public,
       file_size_limit = excluded.file_size_limit,
       allowed_mime_types = excluded.allowed_mime_types;
-
--- 2. Políticas de acceso.
---
---    ADVERTENCIA: la app no tiene login, así que quien alcance la llave anon
---    —que viaja en el navegador— puede subir, leer y borrar en este bucket.
---    Es aceptable mientras la URL de la app sea interna. Si los entregables de
---    UPAX no pueden quedar así, hay que montar Supabase Auth y cambiar
---    `to anon` por `to authenticated` en las cuatro políticas de abajo.
 
 drop policy if exists "dg archivos leer" on storage.objects;
 drop policy if exists "dg archivos subir" on storage.objects;
@@ -61,3 +59,54 @@ create policy "dg archivos borrar"
   on storage.objects for delete
   to anon, authenticated
   using (bucket_id = 'dg-archivos');
+
+/* ------------------------------------------------------------------ *
+ * Sesión compartida · una fila para todos los dispositivos
+ * ------------------------------------------------------------------ */
+
+create table if not exists public.app_state (
+  id text primary key default 'default',
+  values jsonb not null default '{}'::jsonb,
+  version bigint not null default 0,
+  updated_at timestamptz not null default now(),
+  constraint app_state_singleton check (id = 'default')
+);
+
+insert into public.app_state (id, values, version)
+values ('default', '{}'::jsonb, 0)
+on conflict (id) do nothing;
+
+alter table public.app_state enable row level security;
+
+drop policy if exists "app_state leer" on public.app_state;
+drop policy if exists "app_state crear" on public.app_state;
+drop policy if exists "app_state actualizar" on public.app_state;
+
+create policy "app_state leer"
+  on public.app_state for select
+  to anon, authenticated
+  using (true);
+
+create policy "app_state crear"
+  on public.app_state for insert
+  to anon, authenticated
+  with check (id = 'default');
+
+create policy "app_state actualizar"
+  on public.app_state for update
+  to anon, authenticated
+  using (true)
+  with check (id = 'default');
+
+-- Realtime: para que otro dispositivo vea los cambios sin recargar
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'app_state'
+  ) then
+    alter publication supabase_realtime add table public.app_state;
+  end if;
+end $$;

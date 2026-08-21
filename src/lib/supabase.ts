@@ -1,13 +1,13 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Cliente de Supabase para el almacenamiento de los archivos que entregan los
- * DGs. Solo se usa la parte de Storage: el estado de la app sigue viviendo en
- * el store y en localStorage.
+ * Cliente de Supabase:
+ * - Storage: archivos de los DGs y PDFs de entrevista
+ * - Tabla app_state: sesión compartida (opción A) que sincroniza el store
+ *   entre dispositivos; localStorage queda como caché local
  *
  * La llave anon es pública por diseño — es la que va en el navegador. Lo que
- * protege el bucket son las políticas de RLS de supabase/schema.sql, no el
- * secreto de esta llave.
+ * protege el bucket y la tabla son las políticas de RLS de supabase/schema.sql.
  */
 
 const SUPA_URL = (import.meta.env.VITE_SUPABASE_URL ?? '').trim()
