@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import Asistente from './components/Asistente'
 import Modal from './components/Modal'
 import type { ModalMode } from './components/Modal'
@@ -131,10 +131,6 @@ export default function App() {
             </button>
           </span>
 
-          {/* la referencia va arriba, a la mano desde cualquier pantalla */}
-          <button type="button" className="mini mini-ejemplos" onClick={() => setVerEjemplos(true)}>
-            Ver ejemplos
-          </button>
           <button type="button" className="mini" onClick={() => window.print()}>
             Exportar a PDF
           </button>
@@ -171,15 +167,25 @@ export default function App() {
           <h1>{screen.title}</h1>
 
           <nav className="tabs">
-            {tabsDeModulo(modulo).map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={`tab ${t.id === screen.tab ? 'on' : ''}`}
-                onClick={() => ir(firstOfTab(t.id))}
-              >
-                {t.label}
-              </button>
+            {tabsDeModulo(modulo).map((t, i) => (
+              <Fragment key={t.id}>
+                <button
+                  type="button"
+                  className={`tab ${t.id === screen.tab ? 'on' : ''}`}
+                  onClick={() => ir(firstOfTab(t.id))}
+                >
+                  {t.label}
+                </button>
+
+                {/* La referencia va pegada a la primera pestaña del módulo, no al
+                    final: se consulta antes de trabajar, no después. No es una
+                    pantalla más —abre el panel lateral— y por eso va en amarillo. */}
+                {i === 0 && (
+                  <button type="button" className="tab tab-ejemplos" onClick={() => setVerEjemplos(true)}>
+                    Ver ejemplos
+                  </button>
+                )}
+              </Fragment>
             ))}
           </nav>
 

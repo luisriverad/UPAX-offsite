@@ -45,7 +45,7 @@ export const MOLDES_PDV: Record<string, MoldePdv> = {
 }
 
 /* ------------------------------------------------------------------ *
- * La frase puente en futuro
+ * El campo «Cómo lo hacemos» en futuro
  * ------------------------------------------------------------------ */
 
 /** Futuros que no se forman con infinitivo + "emos". */

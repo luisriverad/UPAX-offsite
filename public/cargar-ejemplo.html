@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cargar ejemplo · UPAX</title>
+    <style>
+      body {
+        font: 16px/1.5 system-ui, -apple-system, sans-serif;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        margin: 0;
+        color: #1b1b1f;
+      }
+      p { max-width: 34ch; text-align: center; }
+      .err { color: #b00020; }
+    </style>
+  </head>
+  <body>
+    <p id="msg">Cargando el ejemplo completo…</p>
+    <script>
+      // Siembra el respaldo de demostración en el almacenamiento de la app y
+      // entra a la plataforma ya llena. Mismo origen que la app, por eso puede
+      // escribir su localStorage.
+      const KEY = 'upax_arquitectura_v2'
+      const msg = document.getElementById('msg')
+
+      fetch('/upax-ejemplo-lleno.json?v=' + Date.now())
+        .then((r) => {
+          if (!r.ok) throw new Error('No se encontró upax-ejemplo-lleno.json (HTTP ' + r.status + ')')
+          return r.json()
+        })
+        .then((data) => {
+          const values = data.values ?? data
+          localStorage.setItem(KEY, JSON.stringify(values))
+          msg.textContent = Object.keys(values).length + ' campos cargados. Entrando…'
+          location.replace('/')
+        })
+        .catch((e) => {
+          msg.className = 'err'
+          msg.textContent = 'No se pudo cargar el ejemplo: ' + e.message
+        })
+    </script>
+  </body>
+</html>

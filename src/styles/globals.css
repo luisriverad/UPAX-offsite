@@ -75,8 +75,6 @@ button,input,textarea,select{font-family:inherit;color:inherit}
 .mini:hover{border-color:#CFCFD4;color:var(--ink)}
 
 /* la referencia tiene que saltar a la vista desde cualquier pantalla */
-.mini-ejemplos{background:#FFD400;border-color:#E6BF00;color:var(--red);font-weight:800}
-.mini-ejemplos:hover{background:#FFDE33;border-color:#E6BF00;color:var(--red)}
 
 /* guardar + respaldo como un solo control: se tocan, así se leen como una unidad
    y ocupan lo que ocuparía un botón y medio */
@@ -109,6 +107,10 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 }
 .tab:hover{background:#E8E8EB;color:var(--ink)}
 .tab.on{background:var(--ink);color:#fff}
+/* la referencia vive entre las pestañas pero no es una: el amarillo la separa
+   del recorrido y no toma nunca el estado activo */
+.tab-ejemplos{background:#FFD400;color:var(--red);font-weight:800}
+.tab-ejemplos:hover{background:#FFDE33;color:var(--red)}
 
 /* ---------------------------------------------------------------- *
  * Los dos módulos: pre-evento y off-site
@@ -347,6 +349,18 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .asis-falta .btn{padding:6px 11px;font-size:11.5px}
 .asis-b{padding-left:13px;position:relative}
 .asis-b::before{content:"–";position:absolute;left:0;color:var(--orange)}
+
+/* ---------------------------------------------------------------- *
+ * 01 · método — la lámina fija del embudo VIBE
+ * ---------------------------------------------------------------- */
+/* la lámina es un HTML aparte (`public/vibe-funnel-slide.html`): se muestra tal
+   cual, con su propia proporción de diapositiva, sin marco ni scroll propio */
+.metodo{display:block}
+.metodo-slide{width:100%;aspect-ratio:16/9;border:0;display:block;background:#E7E5DE;border-radius:var(--r)}
+
+@media print{
+  .metodo-slide{aspect-ratio:16/9;break-inside:avoid}
+}
 
 /* ---------------------------------------------------------------- *
  * 01 · manifiesto — el modelo VIBE en la plantilla de los one-page

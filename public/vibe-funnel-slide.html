@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embudo VIBE — AXON B2B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101113;
+    --bg:#F4F3EE;
+    --paper:#FFFFFF;
+    --yellow:#F8C908;
+    --muted:#6E6F73;
+    --line:#DCDAD3;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:#E7E5DE;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    padding:32px;
+  }
+  .stage{width:100%;max-width:1600px}
+  .slide{
+    width:100%;aspect-ratio:16/9;background:var(--bg);
+    border-radius:6px;overflow:hidden;
+    box-shadow:0 30px 70px rgba(16,17,19,.16),0 2px 6px rgba(16,17,19,.08);
+  }
+  svg{display:block;width:100%;height:100%}
+
+  /* Cada gota cae hasta encontrar la pared, se desliza pegada a ella y sale por
+     el cuello: las cinco terminan en el mismo punto, que es lo que la lámina
+     tiene que contar. Los vértices salen del mismo trazo del contorno,
+     desplazado hacia adentro por la normal, así que ninguna gota lo cruza. El
+     quiebre de cada carril cae donde esa gota toca la pared: más abajo cuanto
+     más al centro nace. Unidades del viewBox, no píxeles de pantalla. */
+  .drop{opacity:0;animation-duration:4.6s;animation-iteration-count:infinite;
+        animation-timing-function:cubic-bezier(.45,0,.85,.6)}
+  .d1{animation-name:carril-1}
+  .d2{animation-name:carril-2}
+  .d3{animation-name:carril-3}
+  .d4{animation-name:carril-4}
+  .d5{animation-name:carril-5}
+
+  @keyframes carril-1{
+    0%{opacity:0;transform:translate(0,0)}
+    7%{opacity:.6}
+    10%{transform:translate(0px,55px)}
+    27%{transform:translate(73px,117px)}
+    43%{transform:translate(145px,178px)}
+    60%{transform:translate(219px,239px)}
+    71%{transform:translate(261px,278px);opacity:.55}
+    77%{transform:translate(278px,312px);opacity:.55}
+    92%{transform:translate(279px,396px)}
+    100%{opacity:0;transform:translate(281px,440px)}
+  }
+  @keyframes carril-2{
+    0%{opacity:0;transform:translate(0,0)}
+    7%{opacity:.6}
+    31%{transform:translate(0px,156px)}
+    44%{transform:translate(53px,200px)}
+    58%{transform:translate(106px,245px)}
+    66%{transform:translate(137px,273px);opacity:.55}
+    72%{transform:translate(153px,296px);opacity:.55}
+    77%{transform:translate(160px,322px);opacity:.55}
+    91%{transform:translate(160px,396px)}
+    100%{opacity:0;transform:translate(162px,440px)}
+  }
+  @keyframes carril-3{
+    0%{opacity:0;transform:translate(0,0)}
+    7%{opacity:.6}
+    100%{opacity:0;transform:translate(0px,440px)}
+  }
+  @keyframes carril-4{
+    0%{opacity:0;transform:translate(0,0)}
+    7%{opacity:.6}
+    31%{transform:translate(0px,156px)}
+    44%{transform:translate(-53px,200px)}
+    58%{transform:translate(-106px,245px)}
+    66%{transform:translate(-137px,273px);opacity:.55}
+    72%{transform:translate(-153px,296px);opacity:.55}
+    77%{transform:translate(-160px,322px);opacity:.55}
+    91%{transform:translate(-160px,396px)}
+    100%{opacity:0;transform:translate(-162px,440px)}
+  }
+  @keyframes carril-5{
+    0%{opacity:0;transform:translate(0,0)}
+    7%{opacity:.6}
+    10%{transform:translate(0px,55px)}
+    27%{transform:translate(-73px,117px)}
+    43%{transform:translate(-145px,178px)}
+    60%{transform:translate(-219px,239px)}
+    71%{transform:translate(-261px,278px);opacity:.55}
+    77%{transform:translate(-278px,312px);opacity:.55}
+    92%{transform:translate(-279px,396px)}
+    100%{opacity:0;transform:translate(-281px,440px)}
+  }
+
+  @media (prefers-reduced-motion: reduce){ .drop{animation:none;opacity:.25} }
+  @media print{ body{background:#fff;padding:0} .slide{box-shadow:none;border-radius:0} }
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="slide">
+<svg viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Embudo VIBE: los insumos de la empresa se concentran en el filtro VIBE y bajan a la operación diaria en conductas, indicadores y resultados.">
+
+  <defs>
+    <!-- en coordenadas del lienzo, no del bbox: el amarillo se densifica con la
+         altura real del embudo, de casi nada en la boca a sólido en la punta -->
+    <linearGradient id="cone" x1="0" y1="185" x2="0" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0"    stop-color="#F8C908" stop-opacity="0"/>
+      <stop offset=".28"  stop-color="#F8C908" stop-opacity=".12"/>
+      <stop offset=".55"  stop-color="#F8C908" stop-opacity=".30"/>
+      <stop offset=".78"  stop-color="#F8C908" stop-opacity=".74"/>
+      <stop offset=".93"  stop-color="#F8C908" stop-opacity="1"/>
+      <stop offset="1"    stop-color="#F8C908" stop-opacity=".45"/>
+    </linearGradient>
+    <!-- el contorno nace de la nada: sin este desvanecido, las dos paredes
+         arrancan en un corte seco a media lámina -->
+    <linearGradient id="edge" x1="0" y1="183" x2="0" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0"    stop-color="#101113" stop-opacity="0"/>
+      <stop offset=".23"  stop-color="#101113" stop-opacity="1"/>
+      <stop offset=".92"  stop-color="#101113" stop-opacity="1"/>
+      <stop offset="1"    stop-color="#101113" stop-opacity=".15"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-40%" width="140%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#101113" flood-opacity=".07"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="#F4F3EE"/>
+
+  <!-- ===== ENCABEZADO ===== -->
+  <rect x="80" y="55" width="11" height="11" fill="#F8C908"/>
+  <text x="102" y="65" font-size="12" font-weight="700" letter-spacing="3.6" fill="#101113">METODOLOGÍA VIBE</text>
+  <text x="80" y="113" font-size="32" font-weight="700" letter-spacing="-.5" fill="#101113">Todo lo que la empresa sabe, convertido en operación diaria.</text>
+  <line x1="80" y1="142" x2="1520" y2="142" stroke="#DCDAD3" stroke-width="1"/>
+
+  <!-- ===== RIEL IZQUIERDO: LAS 3 ETAPAS ===== -->
+  <g fill="#101113">
+    <rect x="80" y="228" width="26" height="3" fill="#F8C908"/>
+    <text x="80" y="258" font-size="21" font-weight="800" letter-spacing="1">01</text>
+    <text x="80" y="279" font-size="11" font-weight="600" letter-spacing="2.6" fill="#6E6F73">INSUMOS</text>
+
+    <rect x="80" y="440" width="26" height="3" fill="#F8C908"/>
+    <text x="80" y="470" font-size="21" font-weight="800" letter-spacing="1">02</text>
+    <text x="80" y="491" font-size="11" font-weight="600" letter-spacing="2.6" fill="#6E6F73">FILTRO</text>
+
+    <rect x="80" y="722" width="26" height="3" fill="#F8C908"/>
+    <text x="80" y="752" font-size="21" font-weight="800" letter-spacing="1">03</text>
+    <text x="80" y="773" font-size="11" font-weight="600" letter-spacing="2.6" fill="#6E6F73">EJECUCIÓN</text>
+  </g>
+
+  <!-- ===== EMBUDO ===== -->
+  <!-- Cono recto con los dos hombros redondeados y un cuello corto: una sola
+       silueta continua. Antes eran cuatro piezas de polígono —relleno,
+       rectángulo del cuello, dos paredes y un triángulo suelto abajo— con
+       quiebres en ángulo vivo y empalmes que no cerraban entre sí.
+       Relleno y contorno van separados porque el contorno no lleva tapa: la
+       boca se desvanece hacia arriba y el cuello queda abierto, que es por
+       donde salen las gotas hacia la operación diaria. -->
+  <path d="M400,185 V260 Q400,300 432,327 L748,593 Q780,620 780,650 V720 H820 V650 Q820,620 852,593 L1168,327 Q1200,300 1200,260 V185 Z" fill="url(#cone)"/>
+  <path d="M400,185 V260 Q400,300 432,327 L748,593 Q780,620 780,650 V720
+           M1200,185 V260 Q1200,300 1168,327 L852,593 Q820,620 820,650 V720"
+        fill="none" stroke="url(#edge)" stroke-width="2" stroke-linecap="butt"/>
+
+  <!-- ===== GOTAS EN CAÍDA ===== -->
+  <!-- cada una nace bajo una píldora de insumos y sale por el mismo cuello -->
+  <g>
+    <circle class="drop d1" cx="519" cy="320" r="4" fill="#101113" style="animation-delay:0s"/>
+    <circle class="drop d2" cx="638" cy="320" r="4" fill="#101113" style="animation-delay:.92s"/>
+    <circle class="drop d3" cx="800" cy="320" r="4" fill="#101113" style="animation-delay:1.84s"/>
+    <circle class="drop d4" cx="962" cy="320" r="4" fill="#101113" style="animation-delay:2.76s"/>
+    <circle class="drop d5" cx="1081" cy="320" r="4" fill="#101113" style="animation-delay:3.68s"/>
+  </g>
+
+  <!-- ===== INSUMOS (FILA 1) ===== -->
+  <g filter="url(#soft)">
+    <rect x="476" y="205" width="169" height="42" rx="21" fill="#FFFFFF" stroke="#E2E0D9" stroke-width="1.2"/>
+    <rect x="663" y="205" width="149" height="42" rx="21" fill="#FFFFFF" stroke="#E2E0D9" stroke-width="1.2"/>
+    <rect x="830" y="205" width="118" height="42" rx="21" fill="#FFFFFF" stroke="#E2E0D9" stroke-width="1.2"/>
+    <rect x="966" y="205" width="159" height="42" rx="21" fill="#FFFFFF" stroke="#E2E0D9" stroke-width="1.2"/>
+  </g>
+  <g fill="#F8C908">
+    <circle cx="500" cy="226" r="3.5"/><circle cx="687" cy="226" r="3.5"/>
+    <circle cx="854" cy="226" r="3.5"/><circle cx="990" cy="226" r="3.5"/>
+  </g>
+  <g font-size="15" font-weight="600" letter-spacing="1.2" fill="#101113">
+    <text x="516" y="231">EXPERIENCIA</text>
+    <text x="703" y="231">OPINIONES</text>
+    <text x="870" y="231">PLANES</text>
+    <text x="1006" y="231">MANIFIESTO</text>
+  </g>
+
+  <!-- ===== INSUMOS (FILA 2) ===== -->
+  <g filter="url(#soft)">
+    <rect x="544" y="263" width="149" height="42" rx="21" fill="#FFFFFF" stroke="#E2E0D9" stroke-width="1.2"/>
+    <rect x="711" y="263" width="169" height="42" rx="21" fill="#FFFFFF" stroke="#E2E0D9" stroke-width="1.2"/>
+    <rect x="898" y="263" width="159" height="42" rx="21" fill="#FFFFFF" stroke="#E2E0D9" stroke-width="1.2"/>
+  </g>
+  <g fill="#F8C908">
+    <circle cx="568" cy="284" r="3.5"/><circle cx="735" cy="284" r="3.5"/><circle cx="922" cy="284" r="3.5"/>
+  </g>
+  <g font-size="15" font-weight="600" letter-spacing="1.2" fill="#101113">
+    <text x="584" y="289">HALLAZGOS</text>
+    <text x="751" y="289">ENTREVISTAS</text>
+    <text x="938" y="289">MATERIALES</text>
+  </g>
+
+  <!-- ===== NÚCLEO VIBE ===== -->
+  <text x="792" y="452" text-anchor="middle" font-size="46" font-weight="800" letter-spacing="16" fill="#101113">VIBE</text>
+  <text x="798" y="484" text-anchor="middle" font-size="11.5" font-weight="600" letter-spacing="3.4" fill="#101113" opacity=".62">DE INFORMACIÓN A CONDUCTA</text>
+
+  <!-- ===== SALIDA ===== -->
+  <text x="798" y="772" text-anchor="middle" font-size="23" font-weight="700" letter-spacing="4.5" fill="#101113">OPERACIÓN DIARIA</text>
+
+  <g filter="url(#soft)">
+    <rect x="350" y="800" width="286" height="66" rx="10" fill="#FFFFFF" stroke="#E2E0D9" stroke-width="1.2"/>
+    <rect x="657" y="800" width="286" height="66" rx="10" fill="#FFFFFF" stroke="#E2E0D9" stroke-width="1.2"/>
+    <rect x="964" y="800" width="286" height="66" rx="10" fill="#FFFFFF" stroke="#E2E0D9" stroke-width="1.2"/>
+  </g>
+  <g fill="#F8C908">
+    <rect x="350" y="800" width="5" height="66"/>
+    <rect x="657" y="800" width="5" height="66"/>
+    <rect x="964" y="800" width="5" height="66"/>
+  </g>
+  <g font-size="16" font-weight="700" letter-spacing="2.4" fill="#101113">
+    <text x="378" y="829">CONDUCTAS</text>
+    <text x="685" y="829">INDICADORES</text>
+    <text x="992" y="829">RESULTADOS</text>
+  </g>
+  <g font-size="12" font-weight="500" letter-spacing=".2" fill="#6E6F73">
+    <text x="378" y="850">Lo que la gente hace todos los días</text>
+    <text x="685" y="850">Lo que se mide y se revisa</text>
+    <text x="992" y="850">Lo que se refleja en la utilidad</text>
+  </g>
+
+  <!-- ===== PIE ===== -->
+  <text x="1520" y="884" text-anchor="end" font-size="11.5" font-weight="500" letter-spacing="1.2" fill="#101113" opacity=".45">Powered by AXON B2B.</text>
+</svg>
+</div>
+</div>
+</body>
+</html>

@@ -25,6 +25,7 @@ export const MODULOS: Modulo[] = [
 ]
 
 export const TABS: Tab[] = [
+  { id: 'metodo', label: 'Método VIBE', modulo: 'pre' },
   { id: 'manifiesto', label: 'Manifiesto UPAX', modulo: 'pre' },
   { id: 'ceo', label: 'CEO', modulo: 'pre' },
   { id: 'dgs', label: 'DGs', modulo: 'pre' },
@@ -42,8 +43,17 @@ export const TABS: Tab[] = [
  */
 export const SCREENS: ScreenMeta[] = [
   {
-    id: 's00',
+    id: 's01',
     num: 1,
+    tab: 'metodo',
+    title: 'El método VIBE',
+    sub: 'Cómo se convierte todo lo que la empresa ya sabe en operación diaria: los insumos entran por arriba, el filtro VIBE los ordena y bajan como conductas, indicadores y resultados.',
+    sinAsistente: true,
+    copi: [],
+  },
+  {
+    id: 's00',
+    num: 2,
     tab: 'manifiesto',
     title: 'Manifiesto UPAX',
     sinAsistente: true,
@@ -51,7 +61,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's02',
-    num: 2,
+    num: 3,
     tab: 'ceo',
     title: 'Entrevista con el CEO',
     sub: 'Una sola entrevista estructurada con las mismas secciones del Excel. La plataforma captura, transcribe y convierte respuestas en material de trabajo.',
@@ -65,7 +75,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's03',
-    num: 3,
+    num: 4,
     tab: 'dgs',
     title: 'Entrevistas con cada DG + archivos',
     sub: 'Misma estructura para todas las unidades. Así evitamos un ejercicio distinto por cada una y logramos información comparable desde el inicio.',
@@ -79,7 +89,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's04',
-    num: 4,
+    num: 5,
     tab: 'consolidado',
     title: 'Consolidado de entrevistas y evidencia',
     sub: 'Una pantalla para ver qué dice el CEO, qué dicen los DGs y qué respaldan los archivos antes de redactar cualquier definición.',
@@ -92,10 +102,10 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's05',
-    num: 5,
+    num: 6,
     tab: 'propuesta',
     title: 'Construcción de la Propuesta de Valor',
-    sub: 'Aquí se trabajan únicamente los tres campos del Excel: Para qué existimos, Promesa y Frase puente.',
+    sub: 'Aquí se trabajan únicamente los tres campos del Excel: Para qué existimos, Promesa y Cómo lo hacemos.',
     sinAsistente: true,
     copi: [
       'Generar alternativas usando sólo evidencia cargada',
@@ -106,7 +116,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's06',
-    num: 6,
+    num: 7,
     tab: 'imperativos',
     title: 'Construcción de Imperativos Estratégicos',
     sub: 'La plataforma convierte la información previa en pocos imperativos claros y permite probar si realmente soportan la Propuesta de Valor.',
@@ -120,7 +130,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's07',
-    num: 7,
+    num: 8,
     tab: 'cultura',
     title: 'Cultura: cómo pensamos, decidimos y actuamos',
     sub: 'Una cuadrícula por imperativo. Se redactan comportamientos concretos, no palabras aspiracionales sueltas.',
@@ -134,7 +144,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's08',
-    num: 8,
+    num: 9,
     tab: 'cultura',
     title: 'Cultura: prácticas corporativas y mecanismos de refuerzo',
     sub: 'La misma lógica del Excel: qué hacemos de forma repetible y qué mecanismos hacen que realmente ocurra.',
@@ -148,7 +158,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's09',
-    num: 9,
+    num: 10,
     tab: 'negocio',
     title: 'Negocio: estándares, indicadores, procesos y políticas',
     sub: 'Los cuatro bloques de Negocio del Excel, un imperativo a la vez: el número que se exige, cómo se mide, qué proceso lo sostiene y qué regla gobierna la decisión.',
@@ -162,7 +172,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's12',
-    num: 10,
+    num: 11,
     tab: 'final',
     title: 'Resultado final: matriz UPAX completada',
     sub: 'El proceso termina donde empezó: el Excel convertido en una arquitectura única, trazable y lista para exportar o seguir evolucionando.',

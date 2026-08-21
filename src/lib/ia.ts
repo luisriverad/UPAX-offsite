@@ -21,7 +21,7 @@ const g = (v: Values, k: string) => (v[k] ?? '').trim()
  * ------------------------------------------------------------------ */
 
 /**
- * Todo lo capturado, agrupado POR PREGUNTA. El CEO y las ocho unidades contestan
+ * Todo lo capturado, agrupado POR PREGUNTA. El CEO y las unidades contestan
  * el mismo guion, así que ponerlos uno junto a otro bajo cada pregunta es lo que
  * permite comparar posturas en vez de leer dos entrevistas por separado.
  */
@@ -310,7 +310,7 @@ async function sintetizarLote(v: Values, pantalla: string, lote: Lote): Promise<
           ...forma,
           'No es una preferencia de estilo: una sintesis que no empiece así está mal escrita.',
           'El arranque es parte de la frase, no un título: lo que sigue debe leerse de corrido con él.',
-          'En la frase puente el verbo va en futuro y en primera persona del plural, sin excepción.',
+          'En el campo «Cómo lo hacemos» el verbo va en futuro y en primera persona del plural, sin excepción.',
         ]
       : []),
   ].join('\n')

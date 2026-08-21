@@ -92,6 +92,8 @@ export const UNIDADES: Unidad[] = [
   { id: 6, nombre: 'Zeus' },
   { id: 7, nombre: 'Neracode' },
   { id: 8, nombre: 'UiX' },
+  { id: 9, nombre: 'Marketing' },
+  { id: 10, nombre: 'Finanzas' },
 ]
 
 export const DGS = UNIDADES.map((u) => u.id)
@@ -200,7 +202,7 @@ export const VISTAS_CONSOLIDADO: VistaConsolidado[] = [
     temas: [
       { id: 'existimos', label: 'Para qué existimos', bloque: 'pdv' },
       { id: 'promesa', label: 'Promesa', bloque: 'pdv' },
-      { id: 'puente', label: 'Frase puente', bloque: 'pdv' },
+      { id: 'puente', label: 'Cómo lo hacemos', bloque: 'pdv' },
     ],
   },
   {
@@ -262,7 +264,7 @@ export const CAMPOS_PROPUESTA: CampoPropuesta[] = [
   },
   {
     id: 'puente',
-    tag: 'FRASE PUENTE',
+    tag: 'CÓMO LO HACEMOS',
     titulo: 'Para ello, haremos…',
     hint: 'La frase que conecta la promesa con los imperativos.',
   },

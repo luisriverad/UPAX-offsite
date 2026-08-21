@@ -41,7 +41,7 @@ export const PDV_MANIFIESTO: CampoPdv[] = [
   { tag: 'Para qué existimos', texto: 'Hacer que los negocios de nuestros clientes trasciendan.' },
   { tag: 'Promesa', texto: 'Encendemos la evolución empresarial.', destacado: true },
   {
-    tag: 'Frase puente',
+    tag: 'Cómo lo hacemos',
     texto:
       'Para lograrlo, UPAX debe convertir creatividad, talento, datos y tecnología en soluciones que generen crecimiento y transformación medible para sus clientes.',
   },

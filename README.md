@@ -26,7 +26,7 @@ npm run build        # tsc -b && vite build  →  dist/
 | 02 | CEO | Entrevista con el CEO | 4 bloques × 4 preguntas, respuesta con autoguardado |
 | 03 | DGs | Entrevistas + archivos | Mismo guion por unidad de negocio, con los 5 archivos a pedir y su revisión |
 | 04 | Consolidado | Evidencia por tema | Qué dijo el CEO, cuántos DGs contestaron, cuántos archivos, síntesis editable |
-| 05 | Propuesta | Propuesta de valor | Para qué existimos · Promesa · Frase puente |
+| 05 | Propuesta | Propuesta de valor | Para qué existimos · Promesa · Cómo lo hacemos |
 | 06 | Imperativos | Imperativos estratégicos | Lista variable; cada uno se vuelve columna en Cultura y Negocio |
 | 07 | Cultura | Cómo pensamos, decidimos y actuamos | Cuadrícula conductas × imperativos, con vista alterna de lista |
 | 08 | Cultura | Prácticas y mecanismos | Una práctica y un mecanismo por imperativo |

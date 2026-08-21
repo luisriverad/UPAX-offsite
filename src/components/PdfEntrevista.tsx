@@ -10,7 +10,7 @@ import { useStore } from '../lib/store'
  * trae con texto, así que subir dos veces el mismo archivo es inofensivo.
  *
  * La zona de subida acepta varios PDFs a la vez: cada uno sabe de qué unidad
- * es, así que se pueden soltar los ocho juntos sin ordenarlos.
+ * es, así que se pueden soltar todos juntos sin ordenarlos.
  */
 export default function PdfEntrevista({ dest }: { dest: Destinatario }) {
   const { values, set } = useStore()

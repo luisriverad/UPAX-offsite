@@ -1,4 +1,5 @@
 export type TabId =
+  | 'metodo'
   | 'manifiesto'
   | 'ceo'
   | 'dgs'
