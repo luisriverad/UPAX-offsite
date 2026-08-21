@@ -64,7 +64,16 @@ Los botones **Analizar** y **Cuestionar** mandan lo capturado en la pantalla act
 2. Pon tu llave en `ANTHROPIC_API_KEY`.
 3. Reinicia `npm run dev`.
 
-La llamada pasa por el proxy de Vite (`/api/anthropic`), definido en `vite.config.ts`, así que la llave nunca llega al navegador. Para producción hay que reemplazar ese proxy por un endpoint propio de servidor.
+La llamada pasa por el proxy de Vite (`/api/anthropic`) en local, y en producción por la función `api/anthropic/v1/messages.ts` en Vercel. En ambos casos la llave **nunca** llega al navegador.
+
+**Vercel (obligatorio para Analizar/Cuestionar en producción):**
+
+1. Project → **Settings → Environment Variables**
+2. Añade `ANTHROPIC_API_KEY` (Production + Preview)
+3. Añade también `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` si quieres sesión/archivos en la nube
+4. **Redeploy** después de guardar (las `VITE_*` solo entran en el build)
+
+Sin `ANTHROPIC_API_KEY` en Vercel, el asistente cae al análisis local. Sin la función API (o con una ruta catch-all `[...path]`, que Vercel no soporta en Vite), la llamada responde **404**.
 
 ---
 
