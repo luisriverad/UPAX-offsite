@@ -47,6 +47,16 @@ export const K = {
   dgPdf: (n: number) => `dg.${n}.pdf`,
   ceoPdf: 'cec.pdf',
 
+  /** diamante de alineación: un puntaje de 0 a 10 por eje, y por qué */
+  dia: (eje: string) => `dia.${eje}`,
+  diaSustento: (eje: string) => `dia.${eje}.sustento`,
+  /** veredicto de conjunto que escribió el auto-análisis */
+  diaLectura: 'dia.lectura',
+
+  /** lectura de alineación CEO ↔ DGs, pregunta por pregunta del guion común */
+  alinGrado: (bloque: string, q: number) => `alin.${bloque}.${q}.grado`,
+  alinNota: (bloque: string, q: number) => `alin.${bloque}.${q}.nota`,
+
   cons: (vista: string, tema: string) => `cons.${vista}.${tema}`,
 
   pdv: (campo: string) => `pdv.${campo}`,

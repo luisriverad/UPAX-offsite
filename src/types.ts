@@ -3,6 +3,7 @@ export type TabId =
   | 'manifiesto'
   | 'ceo'
   | 'dgs'
+  | 'alineacion'
   | 'consolidado'
   | 'propuesta'
   | 'imperativos'

@@ -8,13 +8,13 @@ export interface ScreenProps {
 
 /** Desde qué pantalla se edita cada bloque de la matriz maestra. */
 export const PANTALLA_DE_BLOQUE: Record<string, number> = {
-  pdv: 5,
-  imp: 6,
-  'cul.cond': 7,
-  'cul.prac': 8,
-  'cul.mec': 8,
-  'neg.est': 9,
-  'neg.ind': 9,
-  'neg.proc': 10,
-  'neg.pol': 10,
+  pdv: 6,
+  imp: 7,
+  'cul.cond': 8,
+  'cul.prac': 9,
+  'cul.mec': 9,
+  'neg.est': 10,
+  'neg.ind': 10,
+  'neg.proc': 11,
+  'neg.pol': 11,
 }

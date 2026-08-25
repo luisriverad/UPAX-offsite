@@ -1,8 +1,16 @@
-import { ARCHIVOS_DG, BLOQUE_UNIDAD, BLOQUES_CEO, CAMPOS_PROPUESTA, DGS, UNIDADES } from '../data/content'
+import {
+  ARCHIVOS_DG,
+  BLOQUE_UNIDAD,
+  BLOQUES_CEO,
+  CAMPOS_PROPUESTA,
+  DGS,
+  UNIDADES,
+  VISTAS_CONSOLIDADO,
+} from '../data/content'
 import { IMPERATIVOS_MANIFIESTO, PDV_MANIFIESTO } from '../data/manifiesto'
 import type { AnalisisGrupo } from './asistenteEntrevista'
 import { EJEMPLOS_ARQUITECTURA } from '../data/ejemplos'
-import { IMP_DEFAULT, K, unidadDe } from './model'
+import { IMP_DEFAULT, K, documento, unidadDe } from './model'
 import { MOLDES_PDV, campoPdv, conArranque } from './redaccionPdv'
 import type { Values } from '../types'
 
@@ -624,4 +632,162 @@ export async function corregir(
   }
 
   return { campos, omitidos, fallidos }
+}
+
+/* ------------------------------------------------------------------ *
+ * Diamante de alineación · auto-análisis
+ * ------------------------------------------------------------------ */
+
+/** Lo ya sintetizado en el Consolidado: la lectura que el grupo dio por buena. */
+function consolidadoTexto(v: Values): string {
+  const out: string[] = []
+  VISTAS_CONSOLIDADO.forEach((vista) => {
+    vista.temas.forEach((t) => {
+      const texto = g(v, K.cons(vista.id, t.id))
+      if (texto) out.push(`${vista.label} · ${t.label}: ${texto}`)
+    })
+  })
+  return out.length ? ['=== SÍNTESIS APROBADAS EN EL CONSOLIDADO ===', ...out].join('\n') : ''
+}
+
+/** La arquitectura ya redactada en el Off-Site, bloque por bloque. */
+function arquitecturaTexto(v: Values): string {
+  const out: string[] = []
+  documento(v).forEach((sec) => {
+    const items = sec.items.filter((it) => it.texto)
+    if (items.length) out.push(`-- ${sec.titulo} --`, ...items.map((it) => `  ${it.label}: ${it.texto}`))
+  })
+  return out.length ? ['=== ARQUITECTURA YA REDACTADA EN LA PLATAFORMA ===', ...out].join('\n') : ''
+}
+
+/** Las lecturas de alineación que el equipo marcó a mano, pregunta por pregunta. */
+function alineacionTexto(v: Values): string {
+  const out: string[] = []
+  BLOQUES_CEO.forEach((b) => {
+    b.preguntas.forEach((pregunta, q) => {
+      const grado = g(v, K.alinGrado(b.id, q))
+      const nota = g(v, K.alinNota(b.id, q))
+      if (grado || nota) out.push(`${b.label} · P${q + 1} ${pregunta}`, `  ${grado || 'sin marcar'}${nota ? ` — ${nota}` : ''}`)
+    })
+  })
+  return out.length ? ['=== LECTURA MANUAL DE ALINEACIÓN CEO ↔ DGs ===', ...out].join('\n') : ''
+}
+
+/** Todo lo que hay capturado en la plataforma, en un solo texto para el modelo. */
+export function contextoCompleto(v: Values): string {
+  return [
+    marcoVibe(),
+    '',
+    'EVIDENCIA RECOLECTADA (entrevistas y archivos)',
+    evidencia(v) || '(todavía no hay nada capturado)',
+    '',
+    consolidadoTexto(v),
+    '',
+    alineacionTexto(v),
+    '',
+    arquitecturaTexto(v),
+  ]
+    .filter((x) => x !== '')
+    .join('\n')
+}
+
+export type EjeDiamante = 'est' | 'ofe' | 'gen' | 'pro'
+
+export interface CalificacionEje {
+  puntaje: number
+  sustento: string
+}
+
+export interface DiamanteIA {
+  ejes: Record<EjeDiamante, CalificacionEje>
+  /** el veredicto de conjunto, en dos o tres frases */
+  lectura: string
+}
+
+const SISTEMA_DIAMANTE = [
+  'Eres consultor senior de management, nivel socio de firma de primer nivel. Calificas el Diamante de Alineación',
+  `de UPAX: grupo mexicano con ${UNIDADES.length} unidades de negocio (${UNIDADES.map((u) => u.nombre).join(', ')}).`,
+  '',
+  'El diamante son cuatro fuerzas, cada una de 0 a 10:',
+  '- ESTRATEGIA: rumbo claro, decidido y vigente; la dirección sabe a qué le dice que no.',
+  '- OFERTA: los productos y servicios resuelven algo que el cliente valora y paga, y se diferencian.',
+  '- GENTE: el equipo tiene capacidad, información y disposición para ejecutar lo que se decidió.',
+  '- PROCESOS: la operación entrega con consistencia, sin depender del héroe de turno; documentada y medida.',
+  '',
+  'Cómo calificas:',
+  '- Calificas EVIDENCIA, no intención. Un 8 exige que puedas nombrar el hecho que lo sostiene; si solo hay una sensación o una declaración de buenas intenciones, es 5.',
+  '- La ausencia de información no es un 5 de cortesía ni un 8 por default: si no hay nada que sostenga el eje, califica bajo y dilo en el sustento.',
+  '- Lo que una empresa DECLARA en su manifiesto no es evidencia de que ocurra. Evidencia es lo que las entrevistas y los archivos muestran que pasa.',
+  '- La divergencia entre el CEO y los directores es información dura: un rumbo que solo existe en la cabeza del CEO baja Estrategia, no la sube.',
+  '- No inflas para quedar bien ni castigas para parecer riguroso. La calificación tiene que poder defenderse frente al comité con hechos concretos.',
+  '',
+  'El sustento de cada eje: dos frases como máximo, en español de México, tono ejecutivo y directo.',
+  'Nombra la evidencia concreta —quién lo dijo, qué unidad, qué documento— en vez de generalidades. Nada de "excelencia", "sinergia" ni "clase mundial".',
+].join('\n')
+
+const ESQUEMA_DIAMANTE = {
+  type: 'object',
+  properties: {
+    ejes: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          eje: { type: 'string', enum: ['est', 'ofe', 'gen', 'pro'], description: 'est=Estrategia, ofe=Oferta, gen=Gente, pro=Procesos' },
+          // el rango va en la descripción y se vuelve a acotar al recibir: la API
+          // no admite minimum/maximum en un integer dentro del esquema de salida
+          puntaje: { type: 'integer', description: 'la calificación del eje: un entero de 0 a 10' },
+          sustento: {
+            type: 'string',
+            description:
+              'Por qué ese número y no otro, citando la evidencia concreta que lo sostiene o diciendo que no la hay. Máximo dos frases.',
+          },
+        },
+        required: ['eje', 'puntaje', 'sustento'],
+        additionalProperties: false,
+      },
+    },
+    lectura: {
+      type: 'string',
+      description:
+        'El veredicto de conjunto en dos o tres frases: qué figura sale, por dónde se está fugando el resultado y cuál es el movimiento que más mueve la figura.',
+    },
+  },
+  required: ['ejes', 'lectura'],
+  additionalProperties: false,
+} as const
+
+/**
+ * Auto-análisis del diamante: el modelo lee TODO lo que hay en la plataforma
+ * —manifiesto, entrevistas, archivos, consolidado, lectura de alineación y la
+ * arquitectura ya redactada— y califica los cuatro ejes con su sustento. Lo que
+ * devuelve es un punto de partida para discutir en la mesa, no un veredicto:
+ * los deslizadores siguen siendo editables después.
+ */
+export async function calificarDiamante(v: Values): Promise<DiamanteIA> {
+  const instruccion = [
+    contextoCompleto(v),
+    '',
+    'TAREA',
+    'Con TODO lo anterior, califica los cuatro ejes del Diamante de Alineación de UPAX de 0 a 10 y escribe la lectura de conjunto.',
+    'Usa toda la información disponible, no solo un bloque: las entrevistas dicen qué está pasando, el modelo VIBE dice qué acordó UPAX que debía pasar, y la brecha entre ambos es parte de la calificación.',
+    'Devuelve exactamente los cuatro ejes, una vez cada uno.',
+  ].join('\n')
+
+  const data = (await llamar(SISTEMA_DIAMANTE, instruccion, ESQUEMA_DIAMANTE)) as {
+    ejes?: { eje: string; puntaje: number; sustento: string }[]
+    lectura?: string
+  }
+
+  const ejes = {} as Record<EjeDiamante, CalificacionEje>
+  ;(data.ejes ?? []).forEach((e) => {
+    const id = e?.eje as EjeDiamante
+    if (!['est', 'ofe', 'gen', 'pro'].includes(id)) return
+    const n = Math.round(Number(e.puntaje))
+    if (!Number.isFinite(n)) return
+    ejes[id] = { puntaje: Math.min(10, Math.max(0, n)), sustento: (e.sustento ?? '').trim() }
+  })
+
+  if (Object.keys(ejes).length < 4) throw new ErrorIA('El modelo no devolvió los cuatro ejes calificados.')
+  return { ejes, lectura: (data.lectura ?? '').trim() }
 }

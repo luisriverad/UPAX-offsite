@@ -487,6 +487,126 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 .diag-nota{margin:12px 0 0;font-size:11px;line-height:1.4;color:#B7B8BE}
 
 /* ---------------------------------------------------------------- *
+ * 03b · diamante de alineación
+ * ---------------------------------------------------------------- */
+.dia{display:flex;flex-direction:column;gap:16px}
+.dia-cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:1100px){ .dia-cols{grid-template-columns:1fr} }
+
+/* ---- la figura ---- */
+.dia-plot{background:#fff}
+.plot{width:100%;height:auto;display:block;overflow:visible}
+.ax-line{stroke:var(--ink);stroke-width:1.4;opacity:.5}
+.ring{fill:none;stroke:var(--line);stroke-width:1}
+.ring.major{stroke:var(--muted);opacity:.45}
+.tick-mark line{stroke:var(--muted);stroke-width:1.2;opacity:.6}
+.tick{
+  font-size:10px;font-weight:700;fill:var(--muted);dominant-baseline:middle;
+  paint-order:stroke;stroke:#fff;stroke-width:3.5px;stroke-linejoin:round;
+}
+.tick.v{text-anchor:end}
+.tick.h{text-anchor:middle}
+.axis-label{font-size:14px;font-weight:800;letter-spacing:.07em;fill:var(--ink);text-anchor:middle;text-transform:uppercase}
+.axis-sub{font-size:10px;letter-spacing:.05em;fill:var(--muted);text-anchor:middle}
+.axis-val{
+  font-size:13.5px;font-weight:800;fill:var(--orange-ink);
+  paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round;
+  transition:x .25s ease,y .25s ease;
+}
+.axis-val.v,.axis-val.r{text-anchor:start;dominant-baseline:middle}
+.axis-val.l{text-anchor:end;dominant-baseline:middle}
+/* la figura es el diagnóstico: va en el color de marca y se mueve con el slider */
+.kite{fill:rgba(255,75,23,.14);stroke:var(--orange);stroke-width:2;stroke-linejoin:round;transition:points .25s ease}
+.node{fill:#fff;stroke:var(--orange);stroke-width:2.5;transition:cx .25s ease,cy .25s ease}
+.dia-legend{
+  display:flex;gap:16px;flex-wrap:wrap;font-size:10.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin-top:12px;
+}
+
+/* ---- los cuatro deslizadores ---- */
+.dia-ejes{background:#fff}
+.dia-eje{padding:14px 0;border-bottom:1px dashed var(--line)}
+.dia-eje:last-child{border-bottom:0;padding-bottom:2px}
+.dia-eje-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.dia-eje-n{font-size:15px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:9px}
+.dia-dir{font-size:10px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 5px;letter-spacing:.06em}
+.dia-score{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--orange-ink);min-width:2.4ch;text-align:right}
+.dia-q{margin:4px 0 10px;font-size:13px;color:var(--ink2);max-width:58ch}
+.dia-eje input[type=range]{width:100%;accent-color:var(--orange);height:22px;cursor:pointer;margin:0}
+.dia-eje input[type=range]:focus-visible{outline:2px solid var(--orange);outline-offset:4px;border-radius:4px}
+.dia-escala{display:flex;justify-content:space-between;font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-top:2px}
+/* mientras el modelo califica, la tarjeta se apaga y no se puede mover un eje */
+.dia-ejes.esperando{opacity:.5;pointer-events:none}
+/* el aviso vive pegado al botón que lo produjo, y la tarjeta apagada no lo tapa */
+.dia-ejes.esperando .dia-auto{opacity:1}
+.dia-auto{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.dia-aviso{font-size:12px;font-weight:700;color:var(--red);max-width:42ch;text-align:right;line-height:1.4}
+/* el sustento que escribió el auto-análisis: colgado del eje que califica */
+.dia-sustento{
+  margin:10px 0 0;padding-left:11px;border-left:2px solid var(--orange);
+  font-size:12.5px;line-height:1.5;color:var(--ink2);
+}
+
+/* ---- la lectura ---- */
+.dia-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.dia-stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 15px;display:flex;flex-direction:column}
+.dia-stat .k{font-size:10px;letter-spacing:.13em;font-weight:800;text-transform:uppercase;color:var(--muted)}
+.dia-stat .v{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:4px;line-height:1}
+.dia-stat .v em{font-size:16px;font-style:normal;color:var(--muted)}
+.dia-stat .n{font-size:12.5px;color:var(--muted);margin-top:6px}
+.dia-pill{
+  align-self:flex-start;margin-top:8px;border-radius:999px;padding:5px 12px;
+  font-size:12.5px;font-weight:800;border:1px solid currentColor;
+}
+.t-verde{color:var(--green)} .t-ambar{color:var(--amber)} .t-rojo{color:var(--red)}
+.t-good{color:var(--green)} .t-warn{color:var(--amber)} .t-crit{color:var(--red)}
+
+.dia-veredicto{
+  margin:16px 0 0;padding:14px 15px;border:1px solid var(--orange-soft);border-left:3px solid var(--orange);
+  border-radius:10px;background:var(--orange-soft);font-size:13.5px;line-height:1.55;color:var(--ink);
+}
+.dia-veredicto .k{
+  display:block;font-size:10px;letter-spacing:.13em;font-weight:800;
+  text-transform:uppercase;color:var(--orange-ink);margin-bottom:5px;
+}
+
+.dia-hallazgos{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
+.dia-hallazgos li{display:grid;grid-template-columns:6px 1fr;gap:14px}
+/* la barra de color es el semáforo del hallazgo: hereda el tono de su renglón */
+.dia-hallazgos .bar{border-radius:3px;background:currentColor}
+.dia-hallazgos .cuerpo{color:var(--ink);display:block}
+.dia-hallazgos .t{display:block;font-size:14.5px;font-weight:800;margin-bottom:2px}
+.dia-hallazgos .d{display:block;font-size:13px;line-height:1.55;color:var(--ink2);max-width:70ch}
+.dia-acciones{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.dia-acciones .muted{font-size:12.5px;font-weight:700}
+
+.dia-guias{display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;border-top:1px solid var(--line);padding-top:14px}
+.dia-guias > div{max-width:34ch}
+.dia-guias .k{display:block;font-size:10px;letter-spacing:.13em;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.dia-guias p{margin:0;font-size:13px;color:var(--ink2)}
+
+@media (prefers-reduced-motion: reduce){ .kite,.node,.axis-val{transition:none} }
+
+/* ---------------------------------------------------------------- *
+ * 03b · alineación CEO ↔ DGs
+ * ---------------------------------------------------------------- */
+.alin-dgs{display:flex;align-items:center;gap:10px}
+.alin-dgs .btn{padding:4px 10px;font-size:11.5px;white-space:nowrap}
+.alin-lectura{display:flex;flex-direction:column;gap:8px}
+.alin-lectura .pills{flex-wrap:wrap}
+/* el cruce se lee en columnas: la voz del CEO primero y a su lado cada unidad */
+.alin-detalle td{background:var(--soft);padding:14px 12px}
+.alin-cruce{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.alin-voz{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 12px}
+.alin-voz-ceo{border-color:#FFD0BC;background:#FFFCFA}
+.alin-quien{
+  display:block;font-size:10px;letter-spacing:.09em;font-weight:800;
+  text-transform:uppercase;color:var(--muted);margin-bottom:5px;
+}
+.alin-voz-ceo .alin-quien{color:var(--orange-ink)}
+.alin-voz p{margin:0;font-size:12.5px;line-height:1.5;color:var(--ink)}
+
+/* ---------------------------------------------------------------- *
  * 04 · consolidado
  * ---------------------------------------------------------------- */
 .tabla{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:12px;overflow:hidden}

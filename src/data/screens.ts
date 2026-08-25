@@ -14,7 +14,7 @@ export const MODULOS: Modulo[] = [
     id: 'pre',
     num: '01',
     label: 'Pre-evento',
-    nota: 'Levantar la evidencia: entrevistas con el CEO y los DGs, archivos y consolidado.',
+    nota: 'Levantar la evidencia: entrevistas con el CEO y los DGs, archivos, alineación y consolidado.',
   },
   {
     id: 'off',
@@ -29,6 +29,7 @@ export const TABS: Tab[] = [
   { id: 'manifiesto', label: 'Manifiesto UPAX', modulo: 'pre' },
   { id: 'ceo', label: 'CEO', modulo: 'pre' },
   { id: 'dgs', label: 'DGs', modulo: 'pre' },
+  { id: 'alineacion', label: 'Alineación', modulo: 'pre' },
   { id: 'consolidado', label: 'Consolidado', modulo: 'pre' },
   { id: 'propuesta', label: 'Propuesta', modulo: 'off' },
   { id: 'imperativos', label: 'Imperativos', modulo: 'off' },
@@ -88,8 +89,22 @@ export const SCREENS: ScreenMeta[] = [
     ],
   },
   {
-    id: 's04',
+    id: 's03b',
     num: 5,
+    tab: 'alineacion',
+    title: 'Alineación: el diamante y el cruce CEO ↔ DGs',
+    sub: 'Dos lecturas de lo mismo. El Diamante califica de 0 a 10 las cuatro fuerzas que sostienen a la empresa —estrategia, oferta, gente y procesos— y enseña por dónde se fuga el resultado; el cruce baja al detalle y compara respuesta contra respuesta, porque CEO y DGs contestaron el mismo guion.',
+    sinAsistente: true,
+    copi: [
+      'Calificar cada eje con evidencia, no con intención',
+      'Leer el desbalance: el eje débil manda sobre los demás',
+      'Comparar la respuesta del CEO con la de cada DG',
+      'Llevar al Off-Site sólo las divergencias que importan',
+    ],
+  },
+  {
+    id: 's04',
+    num: 6,
     tab: 'consolidado',
     title: 'Consolidado de entrevistas y evidencia',
     sub: 'Una pantalla para ver qué dice el CEO, qué dicen los DGs y qué respaldan los archivos antes de redactar cualquier definición.',
@@ -102,7 +117,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's05',
-    num: 6,
+    num: 7,
     tab: 'propuesta',
     title: 'Construcción de la Propuesta de Valor',
     sub: 'Aquí se trabajan únicamente los tres campos del Excel: Para qué existimos, Promesa y Cómo lo hacemos.',
@@ -116,7 +131,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's06',
-    num: 7,
+    num: 8,
     tab: 'imperativos',
     title: 'Construcción de Imperativos Estratégicos',
     sub: 'La plataforma convierte la información previa en pocos imperativos claros y permite probar si realmente soportan la Propuesta de Valor.',
@@ -130,7 +145,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's07',
-    num: 8,
+    num: 9,
     tab: 'cultura',
     title: 'Cultura: cómo pensamos, decidimos y actuamos',
     sub: 'Una cuadrícula por imperativo. Se redactan comportamientos concretos, no palabras aspiracionales sueltas.',
@@ -144,7 +159,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's08',
-    num: 9,
+    num: 10,
     tab: 'cultura',
     title: 'Cultura: prácticas corporativas y mecanismos de refuerzo',
     sub: 'La misma lógica del Excel: qué hacemos de forma repetible y qué mecanismos hacen que realmente ocurra.',
@@ -158,7 +173,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's09',
-    num: 10,
+    num: 11,
     tab: 'negocio',
     title: 'Negocio: estándares, indicadores, procesos y políticas',
     sub: 'Los cuatro bloques de Negocio del Excel, un imperativo a la vez: el número que se exige, cómo se mide, qué proceso lo sostiene y qué regla gobierna la decisión.',
@@ -172,7 +187,7 @@ export const SCREENS: ScreenMeta[] = [
   },
   {
     id: 's12',
-    num: 11,
+    num: 12,
     tab: 'final',
     title: 'Resultado final: matriz UPAX completada',
     sub: 'El proceso termina donde empezó: el Excel convertido en una arquitectura única, trazable y lista para exportar o seguir evolucionando.',

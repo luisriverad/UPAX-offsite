@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diamante de Alineación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+  :root{
+    --bg:#E9EDF1;
+    --card:#FCFDFE;
+    --card-2:#F2F5F8;
+    --line:#D2DBE2;
+    --line-soft:#E3E9EE;
+    --ink:#101820;
+    --muted:#5B6B78;
+    --accent:#0E7C86;
+    --accent-ink:#0A5C64;
+    --accent-fill:rgba(14,124,134,.15);
+    --good:#2E7D57;
+    --warn:#A9701A;
+    --crit:#A93A31;
+    --shadow:0 1px 2px rgba(16,24,32,.05), 0 8px 24px -16px rgba(16,24,32,.28);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0D1317;
+      --card:#151D23;
+      --card-2:#1A242B;
+      --line:#27343C;
+      --line-soft:#1F2A31;
+      --ink:#E7EEF2;
+      --muted:#93A5B1;
+      --accent:#3BC0C6;
+      --accent-ink:#7FDCE0;
+      --accent-fill:rgba(59,192,198,.17);
+      --good:#4FB585;
+      --warn:#D8A34E;
+      --crit:#E27A69;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0D1317;
+    --card:#151D23;
+    --card-2:#1A242B;
+    --line:#27343C;
+    --line-soft:#1F2A31;
+    --ink:#E7EEF2;
+    --muted:#93A5B1;
+    --accent:#3BC0C6;
+    --accent-ink:#7FDCE0;
+    --accent-fill:rgba(59,192,198,.17);
+    --good:#4FB585;
+    --warn:#D8A34E;
+    --crit:#E27A69;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -18px rgba(0,0,0,.8);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Source Serif 4",Georgia,serif;
+    font-size:16px;
+    line-height:1.55;
+    margin:0;
+    padding:28px 20px 64px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+
+  .eyebrow{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  h1{
+    font-family:"Archivo",system-ui,sans-serif;
+    font-weight:700;letter-spacing:-.022em;
+    font-size:clamp(28px,4.2vw,42px);
+    line-height:1.05;margin:6px 0 8px;text-wrap:balance;
+  }
+  .lede{max-width:62ch;color:var(--muted);margin:0;font-size:17px}
+
+  header .meta{
+    display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:center;
+  }
+  .field{
+    display:flex;align-items:center;gap:8px;
+    background:var(--card);border:1px solid var(--line);border-radius:7px;
+    padding:6px 10px;box-shadow:var(--shadow);
+  }
+  .field label{
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);
+  }
+  .field input{
+    border:0;background:transparent;color:var(--ink);font:inherit;font-size:15px;
+    padding:2px 0;min-width:150px;
+  }
+  .field input:focus{outline:none}
+  .field:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-fill)}
+
+  .grid{
+    display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:22px;align-items:start;
+  }
+  @media (max-width:900px){ .grid{grid-template-columns:1fr} }
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--shadow);padding:20px;
+  }
+  .card h2{
+    font-family:"Archivo",sans-serif;font-size:13px;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+    margin:0 0 16px;
+  }
+
+  /* ---- plot ---- */
+  .plot-wrap{display:flex;flex-direction:column;gap:14px}
+  svg.plot{width:100%;height:auto;display:block;overflow:visible}
+  .ax-line{stroke:var(--ink);stroke-width:1.4;opacity:.55}
+  .ring{fill:none;stroke:var(--line);stroke-width:1}
+  .ring.major{stroke:var(--muted);opacity:.4}
+  .tick-mark{stroke:var(--muted);stroke-width:1.2;opacity:.6}
+  .tick{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--muted);
+    dominant-baseline:middle;
+    paint-order:stroke;stroke:var(--card);stroke-width:3.5px;stroke-linejoin:round;
+  }
+  .tick.v{text-anchor:end}
+  .tick.h{text-anchor:middle}
+  .axis-label{
+    font-family:"Archivo",sans-serif;font-size:14px;font-weight:700;
+    letter-spacing:.07em;fill:var(--ink);text-anchor:middle;text-transform:uppercase;
+  }
+  .axis-sub{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.05em;
+    fill:var(--muted);text-anchor:middle;
+  }
+  .axis-val{
+    font-family:"IBM Plex Mono",monospace;font-size:13.5px;font-weight:600;
+    fill:var(--accent-ink);
+    paint-order:stroke;stroke:var(--card);stroke-width:4px;stroke-linejoin:round;
+    transition:x .25s ease, y .25s ease;
+  }
+  .axis-val.v,.axis-val.r{text-anchor:start;dominant-baseline:middle}
+  .axis-val.l{text-anchor:end;dominant-baseline:middle}
+  #kite{fill:var(--accent-fill);stroke:var(--accent);stroke-width:2;stroke-linejoin:round;
+        transition:d .25s ease, points .25s ease}
+  .node{fill:var(--card);stroke:var(--accent);stroke-width:2.5;transition:cx .25s ease, cy .25s ease}
+  .legend{
+    display:flex;gap:16px;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+    border-top:1px solid var(--line-soft);padding-top:12px;
+  }
+
+  /* ---- sliders ---- */
+  .axes{display:flex;flex-direction:column;gap:4px}
+  .axis{
+    padding:14px 0;border-bottom:1px dashed var(--line-soft);
+  }
+  .axis:last-child{border-bottom:0;padding-bottom:2px}
+  .axis-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+  .axis-name{
+    font-family:"Archivo",sans-serif;font-weight:600;font-size:16px;letter-spacing:-.01em;
+    display:flex;align-items:center;gap:9px;
+  }
+  .dir{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted);
+    border:1px solid var(--line);border-radius:4px;padding:1px 5px;letter-spacing:.06em;
+  }
+  .score{
+    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:22px;
+    font-variant-numeric:tabular-nums;color:var(--accent-ink);min-width:2.4ch;text-align:right;
+  }
+  .q{margin:4px 0 10px;font-size:14.5px;color:var(--muted);max-width:58ch}
+  input[type=range]{
+    width:100%;accent-color:var(--accent);height:22px;cursor:pointer;margin:0;
+  }
+  input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px}
+  .scale{
+    display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;
+    font-size:9.5px;color:var(--muted);letter-spacing:.08em;margin-top:2px;
+  }
+
+  /* ---- readout ---- */
+  .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+  .stat{
+    background:var(--card-2);border:1px solid var(--line-soft);border-radius:9px;padding:14px 15px;
+  }
+  .stat .k{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--muted);
+  }
+  .stat .v{
+    font-family:"Archivo",sans-serif;font-weight:700;font-size:30px;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums;margin-top:4px;line-height:1;
+  }
+  .stat .n{font-size:13.5px;color:var(--muted);margin-top:6px}
+  .pill{
+    display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:5px 12px;
+    font-family:"Archivo",sans-serif;font-size:12.5px;font-weight:600;letter-spacing:.02em;
+    border:1px solid currentColor;
+  }
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .t-good{color:var(--good)} .t-warn{color:var(--warn)} .t-crit{color:var(--crit)}
+
+  ul.findings{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
+  ul.findings li{
+    display:grid;grid-template-columns:6px 1fr;gap:14px;align-items:stretch;
+  }
+  ul.findings .bar{border-radius:3px;background:currentColor}
+  ul.findings .body{color:var(--ink)}
+  ul.findings .t{
+    font-family:"Archivo",sans-serif;font-weight:600;font-size:15.5px;margin-bottom:2px;
+  }
+  ul.findings .d{font-size:15px;color:var(--muted);max-width:70ch}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  button{
+    font-family:"Archivo",sans-serif;font-size:13px;font-weight:600;letter-spacing:.01em;
+    background:var(--card-2);color:var(--ink);border:1px solid var(--line);
+    border-radius:7px;padding:9px 14px;cursor:pointer;transition:border-color .15s,background .15s;
+  }
+  button:hover{border-color:var(--accent);background:var(--accent-fill)}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  :root[data-theme="dark"] button.primary{color:#08161A}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) button.primary{color:#08161A}}
+  button.primary:hover{filter:brightness(1.06);background:var(--accent)}
+
+  .note{font-size:14px;color:var(--muted);max-width:74ch}
+  .foot{
+    border-top:1px solid var(--line);padding-top:16px;display:flex;flex-wrap:wrap;
+    gap:24px;justify-content:space-between;align-items:flex-start;
+  }
+  .guide{max-width:34ch}
+  .guide .k{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:6px;
+  }
+  .guide p{margin:0;font-size:14px;color:var(--muted)}
+
+  @media (prefers-reduced-motion: reduce){*{transition:none !important}}
+  @media print{
+    body{background:#fff;padding:0}
+    .card{box-shadow:none;break-inside:avoid}
+    .actions{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Diagnóstico de alineación organizacional</div>
+    <h1>Diamante de Alineación</h1>
+    <p class="lede">Cuatro fuerzas sostienen a una empresa. Califica cada una de 0 a 10 y observa la figura: un diamante parejo significa que la empresa jala hacia el mismo lado; una figura chueca muestra exactamente por dónde se está fugando el resultado.</p>
+    <div class="meta">
+      <div class="field"><label for="empresa">Empresa</label><input id="empresa" type="text" placeholder="Nombre de la empresa"></div>
+      <div class="field"><label for="fecha">Fecha</label><input id="fecha" type="text" placeholder="Ago 2026"></div>
+      <div class="field"><label for="evaluador">Evaluó</label><input id="evaluador" type="text" placeholder="Nombre / área"></div>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <section class="card plot-wrap">
+      <h2>Figura resultante</h2>
+      <svg class="plot" viewBox="0 0 620 500" role="img" aria-labelledby="plotTitle">
+        <title id="plotTitle">Diamante de alineación: estrategia, oferta, gente y procesos calificados de 0 a 10</title>
+
+        <!-- rings: diamonds at 2,4,6,8,10 -->
+        <polygon class="ring" points="310,218 342,250 310,282 278,250"></polygon>
+        <polygon class="ring" points="310,186 374,250 310,314 246,250"></polygon>
+        <polygon class="ring major" points="310,154 406,250 310,346 214,250"></polygon>
+        <polygon class="ring" points="310,122 438,250 310,378 182,250"></polygon>
+        <polygon class="ring major" points="310,90 470,250 310,410 150,250"></polygon>
+
+        <!-- axes -->
+        <line class="ax-line" x1="310" y1="90" x2="310" y2="410"></line>
+        <line class="ax-line" x1="150" y1="250" x2="470" y2="250"></line>
+
+        <!-- tick marks -->
+        <g class="tick-mark">
+          <line x1="305" y1="218" x2="315" y2="218"></line>
+          <line x1="305" y1="186" x2="315" y2="186"></line>
+          <line x1="305" y1="154" x2="315" y2="154"></line>
+          <line x1="305" y1="122" x2="315" y2="122"></line>
+          <line x1="305" y1="90"  x2="315" y2="90"></line>
+          <line x1="305" y1="282" x2="315" y2="282"></line>
+          <line x1="305" y1="314" x2="315" y2="314"></line>
+          <line x1="305" y1="346" x2="315" y2="346"></line>
+          <line x1="305" y1="378" x2="315" y2="378"></line>
+          <line x1="305" y1="410" x2="315" y2="410"></line>
+          <line x1="342" y1="245" x2="342" y2="255"></line>
+          <line x1="374" y1="245" x2="374" y2="255"></line>
+          <line x1="406" y1="245" x2="406" y2="255"></line>
+          <line x1="438" y1="245" x2="438" y2="255"></line>
+          <line x1="470" y1="245" x2="470" y2="255"></line>
+          <line x1="278" y1="245" x2="278" y2="255"></line>
+          <line x1="246" y1="245" x2="246" y2="255"></line>
+          <line x1="214" y1="245" x2="214" y2="255"></line>
+          <line x1="182" y1="245" x2="182" y2="255"></line>
+          <line x1="150" y1="245" x2="150" y2="255"></line>
+        </g>
+
+        <!-- tick numbers: eje vertical a la izquierda, eje horizontal abajo -->
+        <text class="tick v" x="298" y="218">2</text>
+        <text class="tick v" x="298" y="186">4</text>
+        <text class="tick v" x="298" y="154">6</text>
+        <text class="tick v" x="298" y="122">8</text>
+        <text class="tick v" x="298" y="90">10</text>
+        <text class="tick v" x="298" y="282">2</text>
+        <text class="tick v" x="298" y="314">4</text>
+        <text class="tick v" x="298" y="346">6</text>
+        <text class="tick v" x="298" y="378">8</text>
+        <text class="tick v" x="298" y="410">10</text>
+        <text class="tick h" x="342" y="268">2</text>
+        <text class="tick h" x="374" y="268">4</text>
+        <text class="tick h" x="406" y="268">6</text>
+        <text class="tick h" x="438" y="268">8</text>
+        <text class="tick h" x="470" y="268">10</text>
+        <text class="tick h" x="278" y="268">2</text>
+        <text class="tick h" x="246" y="268">4</text>
+        <text class="tick h" x="214" y="268">6</text>
+        <text class="tick h" x="182" y="268">8</text>
+        <text class="tick h" x="150" y="268">10</text>
+
+        <!-- kite -->
+        <polygon id="kite" points="310,250 310,250 310,250 310,250"></polygon>
+        <circle class="node" id="n-est" cx="310" cy="250" r="5"></circle>
+        <circle class="node" id="n-ofe" cx="310" cy="250" r="5"></circle>
+        <circle class="node" id="n-gen" cx="310" cy="250" r="5"></circle>
+        <circle class="node" id="n-pro" cx="310" cy="250" r="5"></circle>
+
+        <!-- valores: viajan con cada punto -->
+        <text class="axis-val v" id="v-est" x="325" y="250">0</text>
+        <text class="axis-val v" id="v-gen" x="325" y="250">0</text>
+        <text class="axis-val r" id="v-ofe" x="315" y="237">0</text>
+        <text class="axis-val l" id="v-pro" x="305" y="237">0</text>
+
+        <!-- nombres de los ejes -->
+        <text class="axis-label" x="310" y="46">Estrategia</text>
+        <text class="axis-sub" x="310" y="64">rumbo · foco · decisiones</text>
+
+        <text class="axis-label" x="310" y="452">Gente</text>
+        <text class="axis-sub" x="310" y="470">equipo de trabajo</text>
+
+        <text class="axis-label" x="72" y="244">Procesos</text>
+        <text class="axis-sub" x="72" y="262">cómo se opera</text>
+
+        <text class="axis-label" x="548" y="244">Oferta</text>
+        <text class="axis-sub" x="548" y="262">productos y servicios</text>
+      </svg>
+      <div class="legend">
+        <span>0 = centro (muy bajo)</span>
+        <span>10 = borde (muy alto)</span>
+        <span>Figura pareja = alineación</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Calificación por eje</h2>
+      <div class="axes" id="axes"></div>
+    </section>
+
+  </div>
+
+  <section class="card">
+    <h2>Lectura del diamante</h2>
+    <div class="readout">
+      <div class="stat">
+        <div class="k">Nivel de alineación</div>
+        <div class="v" id="s-area">0<span style="font-size:16px;color:var(--muted)">%</span></div>
+        <div class="n">Superficie del diamante contra el máximo posible.</div>
+      </div>
+      <div class="stat">
+        <div class="k">Promedio de los ejes</div>
+        <div class="v" id="s-avg">0.0</div>
+        <div class="n">Qué tan alto está el conjunto, sin ver el balance.</div>
+      </div>
+      <div class="stat">
+        <div class="k">Desbalance</div>
+        <div class="v" id="s-gap">0</div>
+        <div class="n">Distancia entre el eje más fuerte y el más débil.</div>
+      </div>
+      <div class="stat">
+        <div class="k">Diagnóstico</div>
+        <div class="v" style="font-size:15px;margin-top:8px"><span class="pill t-warn" id="s-pill"><span class="dot"></span>Sin calificar</span></div>
+        <div class="n" id="s-pill-note">Mueve los cuatro ejes para obtener la lectura.</div>
+      </div>
+    </div>
+    <ul class="findings" id="findings"></ul>
+    <div class="actions">
+      <button class="primary" id="btn-copy">Copiar resumen</button>
+      <button id="btn-save">Guardar en este navegador</button>
+      <button id="btn-reset">Reiniciar en 5</button>
+      <span class="note" id="msg" aria-live="polite"></span>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div class="guide">
+      <div class="k">Cómo calificar</div>
+      <p>Califica evidencia, no intención. Un 8 exige que puedas nombrar el hecho que lo sostiene; si solo tienes la sensación, es 5.</p>
+    </div>
+    <div class="guide">
+      <div class="k">Quién califica</div>
+      <p>Lo más útil es que dirección y equipo lo llenen por separado. La diferencia entre las dos figuras suele ser el hallazgo.</p>
+    </div>
+    <div class="guide">
+      <div class="k">Qué sigue</div>
+      <p>Trabaja el eje más bajo durante un trimestre. Subir el eje débil mueve la figura más que reforzar el que ya es fuerte.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var AXES = [
+    { id:"est", key:"Estrategia", dir:"Arriba", name:"Estrategia",
+      q:"¿Hay un rumbo claro, decidido y vigente? ¿La dirección sabe a qué le dice que no?" },
+    { id:"ofe", key:"Oferta", dir:"Derecha", name:"Oferta",
+      q:"¿Los productos y servicios resuelven algo que el cliente sí valora y paga? ¿Se diferencian?" },
+    { id:"gen", key:"Gente", dir:"Abajo", name:"Gente (equipo de trabajo)",
+      q:"¿El equipo tiene la capacidad, la información y las ganas para ejecutar lo que se decidió?" },
+    { id:"pro", key:"Procesos", dir:"Izquierda", name:"Procesos",
+      q:"¿La operación entrega con consistencia, sin depender del héroe de turno? ¿Está documentada y medida?" }
+  ];
+
+  var state = { est:5, ofe:5, gen:5, pro:5 };
+  var CX = 310, CY = 250, UNIT = 16;
+  var VOFF = { est:[13,-2], gen:[13,12], ofe:[5,-13], pro:[-5,-13] };
+
+  /* ---------- build controls ---------- */
+  var host = document.getElementById("axes");
+  AXES.forEach(function(a){
+    var wrap = document.createElement("div");
+    wrap.className = "axis";
+    wrap.innerHTML =
+      '<div class="axis-head">' +
+        '<div class="axis-name">' + a.name + ' <span class="dir">' + a.dir + '</span></div>' +
+        '<div class="score" id="sc-' + a.id + '">5</div>' +
+      '</div>' +
+      '<p class="q">' + a.q + '</p>' +
+      '<input type="range" min="0" max="10" step="1" value="5" id="r-' + a.id + '" ' +
+        'aria-label="' + a.name + ', de 0 a 10">' +
+      '<div class="scale"><span>0 · Muy bajo</span><span>5</span><span>10 · Muy alto</span></div>';
+    host.appendChild(wrap);
+    wrap.querySelector("input").addEventListener("input", function(e){
+      state[a.id] = parseInt(e.target.value, 10);
+      render();
+    });
+  });
+
+  /* ---------- render ---------- */
+  function pts(){
+    return {
+      est: [CX, CY - state.est * UNIT],
+      ofe: [CX + state.ofe * UNIT, CY],
+      gen: [CX, CY + state.gen * UNIT],
+      pro: [CX - state.pro * UNIT, CY]
+    };
+  }
+
+  function level(v){
+    if (v >= 8) return "t-good";
+    if (v >= 5) return "t-warn";
+    return "t-crit";
+  }
+
+  function findings(){
+    var e = state.est, o = state.ofe, g = state.gen, p = state.pro;
+    var out = [];
+    var vert = e - g, horz = o - p;
+
+    if (vert >= 3) out.push(["t-crit","Estrategia que no baja al piso",
+      "La dirección tiene claridad (" + e + ") que el equipo no alcanza (" + g + "). El plan se queda en la junta directiva: se decide arriba y se improvisa abajo. Traduce la estrategia a metas por persona antes de decidir nada nuevo."]);
+    if (vert <= -3) out.push(["t-warn","Equipo esperando rumbo",
+      "Tienes gente capaz (" + g + ") sin una estrategia que la ordene (" + e + "). Se trabaja mucho y avanza poco, porque cada quien elige su prioridad. El cuello de botella es una decisión de dirección, no de talento."]);
+    if (horz >= 3) out.push(["t-crit","Promesa mayor que la operación",
+      "La oferta vale (" + o + ") pero los procesos no la sostienen (" + p + "). Se vende bien y se entrega mal: reprocesos, quejas y margen que se evapora en la entrega. Crecer así multiplica el problema."]);
+    if (horz <= -3) out.push(["t-warn","Máquina eficiente sin diferencia",
+      "Operas con orden (" + p + ") una oferta que no destaca (" + o + "). Serás muy eficiente compitiendo por precio. La palanca está en el producto y su propuesta de valor, no en más eficiencia."]);
+
+    var arr = [["Estrategia",e],["Oferta",o],["Gente",g],["Procesos",p]];
+    var min = arr.slice().sort(function(a,b){return a[1]-b[1]})[0];
+    var max = arr.slice().sort(function(a,b){return b[1]-a[1]})[0];
+    var fixes = {
+      "Estrategia":"Define en una página: a quién sí, a quién no, y las tres apuestas del año.",
+      "Oferta":"Revisa margen y diferenciación producto por producto; poda lo que no gana ni posiciona.",
+      "Gente":"Aclara responsabilidades y métricas por puesto; cubre la brecha de capacidad con capacitación o cambio.",
+      "Procesos":"Documenta y mide el proceso que toca al cliente; ahí está la fuga que se ve en el estado de resultados."
+    };
+    out.push([level(min[1]) , "Eslabón más débil: " + min[0] + " (" + min[1] + ")",
+      "La figura se rompe por aquí, y ningún eje rinde más que su eslabón débil: " + max[0] + " en " + max[1] + " no compensa a " + min[0] + " en " + min[1] + ". " + fixes[min[0]]]);
+
+    if (Math.abs(vert) <= 2 && Math.abs(horz) <= 2 && min[1] >= 7)
+      out.push(["t-good","Diamante parejo y alto",
+        "Los cuatro ejes se sostienen entre sí. El riesgo aquí ya no es la alineación sino la complacencia: define la siguiente ambición antes de que la figura se acomode sola."]);
+
+    return out;
+  }
+
+  function render(){
+    var P = pts();
+    document.getElementById("kite").setAttribute("points",
+      P.est.join(",") + " " + P.ofe.join(",") + " " + P.gen.join(",") + " " + P.pro.join(","));
+    ["est","ofe","gen","pro"].forEach(function(k){
+      var n = document.getElementById("n-" + k);
+      n.setAttribute("cx", P[k][0]); n.setAttribute("cy", P[k][1]);
+      var lab = document.getElementById("v-" + k);
+      lab.setAttribute("x", P[k][0] + VOFF[k][0]);
+      lab.setAttribute("y", P[k][1] + VOFF[k][1]);
+      lab.textContent = state[k];
+      document.getElementById("sc-" + k).textContent = state[k];
+      document.getElementById("r-" + k).value = state[k];
+    });
+
+    var e = state.est, o = state.ofe, g = state.gen, p = state.pro;
+    var area = 0.5 * (e*o + o*g + g*p + p*e);      // máx = 200
+    var pct = Math.round(area / 2);                 // area/200*100
+    var avg = (e + o + g + p) / 4;
+    var vals = [e,o,g,p];
+    var gap = Math.max.apply(null, vals) - Math.min.apply(null, vals);
+
+    document.getElementById("s-area").innerHTML = pct + '<span style="font-size:16px;color:var(--muted)">%</span>';
+    document.getElementById("s-avg").textContent = avg.toFixed(1);
+    document.getElementById("s-gap").textContent = gap;
+
+    var pill = document.getElementById("s-pill"), note = document.getElementById("s-pill-note"), label, cls, txt;
+    if (pct >= 75 && gap <= 2){ cls="t-good"; label="Alineada"; txt="Los cuatro ejes se sostienen entre sí. Cuida que no se afloje."; }
+    else if (pct >= 55){ cls="t-warn"; label="Funcional con fugas"; txt="Opera, pero pierde en las juntas de los ejes. Hay margen recuperable."; }
+    else if (pct >= 30){ cls="t-crit"; label="Desalineada"; txt="La desalineación ya cuesta dinero: se nota en margen, rotación o reprocesos."; }
+    else { cls="t-crit"; label="Desalineación crítica"; txt="La empresa avanza por esfuerzo individual, no por sistema."; }
+    pill.className = "pill " + cls;
+    pill.innerHTML = '<span class="dot"></span>' + label;
+    note.textContent = txt;
+
+    var ul = document.getElementById("findings");
+    ul.innerHTML = "";
+    findings().forEach(function(f){
+      var li = document.createElement("li");
+      li.className = f[0];
+      li.innerHTML = '<div class="bar"></div><div class="body"><div class="t">' + f[1] + '</div><div class="d">' + f[2] + '</div></div>';
+      ul.appendChild(li);
+    });
+  }
+
+  /* ---------- actions ---------- */
+  function flash(t){
+    var m = document.getElementById("msg");
+    m.textContent = t;
+    setTimeout(function(){ if (m.textContent === t) m.textContent = ""; }, 2600);
+  }
+
+  function summary(){
+    var emp = document.getElementById("empresa").value || "Empresa sin nombre";
+    var f = document.getElementById("fecha").value;
+    var ev = document.getElementById("evaluador").value;
+    var e = state.est, o = state.ofe, g = state.gen, p = state.pro;
+    var pct = Math.round(0.5 * (e*o + o*g + g*p + p*e) / 2);
+    var lines = [
+      "DIAMANTE DE ALINEACIÓN — " + emp + (f ? " · " + f : "") + (ev ? " · " + ev : ""),
+      "",
+      "Estrategia (arriba): " + e + "/10",
+      "Oferta (derecha):    " + o + "/10",
+      "Gente (abajo):       " + g + "/10",
+      "Procesos (izq.):     " + p + "/10",
+      "",
+      "Nivel de alineación: " + pct + "%   |   Promedio: " + ((e+o+g+p)/4).toFixed(1) +
+        "   |   Desbalance: " + (Math.max(e,o,g,p) - Math.min(e,o,g,p)),
+      ""
+    ];
+    findings().forEach(function(x){ lines.push("• " + x[1] + " — " + x[2]); });
+    return lines.join("\n");
+  }
+
+  document.getElementById("btn-copy").addEventListener("click", function(){
+    var txt = summary();
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(
+        function(){ flash("Resumen copiado."); },
+        function(){ flash("No se pudo copiar aquí."); }
+      );
+    } else { flash("No se pudo copiar aquí."); }
+  });
+
+  var KEY = "diamante-alineacion-v1";
+  document.getElementById("btn-save").addEventListener("click", function(){
+    try{
+      localStorage.setItem(KEY, JSON.stringify({
+        s: state,
+        empresa: document.getElementById("empresa").value,
+        fecha: document.getElementById("fecha").value,
+        evaluador: document.getElementById("evaluador").value
+      }));
+      flash("Guardado en este navegador.");
+    }catch(err){ flash("Este navegador no permite guardar."); }
+  });
+
+  document.getElementById("btn-reset").addEventListener("click", function(){
+    state = { est:5, ofe:5, gen:5, pro:5 };
+    render();
+    flash("Ejes en 5.");
+  });
+
+  try{
+    var raw = localStorage.getItem(KEY);
+    if (raw){
+      var d = JSON.parse(raw);
+      if (d && d.s){ ["est","ofe","gen","pro"].forEach(function(k){
+        if (typeof d.s[k] === "number") state[k] = d.s[k];
+      }); }
+      if (d.empresa) document.getElementById("empresa").value = d.empresa;
+      if (d.fecha) document.getElementById("fecha").value = d.fecha;
+      if (d.evaluador) document.getElementById("evaluador").value = d.evaluador;
+    }
+  }catch(err){ /* sin almacenamiento: se usa el estado por defecto */ }
+
+  render();
+})();
+</script>
+</body>
+</html>

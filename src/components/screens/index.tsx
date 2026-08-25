@@ -3,6 +3,7 @@ import S00Manifiesto from './S00Manifiesto'
 import S01Metodo from './S01Metodo'
 import S02Ceo from './S02Ceo'
 import S03Dgs from './S03Dgs'
+import S03bAlineacion from './S03bAlineacion'
 import S04Consolidado from './S04Consolidado'
 import S05Propuesta from './S05Propuesta'
 import S06Imperativos from './S06Imperativos'
@@ -18,6 +19,7 @@ export const PANTALLAS: Record<string, ComponentType<ScreenProps>> = {
   s00: S00Manifiesto,
   s02: S02Ceo,
   s03: S03Dgs,
+  s03b: S03bAlineacion,
   s04: S04Consolidado,
   s05: S05Propuesta,
   s06: S06Imperativos,
