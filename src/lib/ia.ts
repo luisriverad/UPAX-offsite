@@ -114,6 +114,28 @@ export function hayEvidencia(v: Values): boolean {
  * Llamada al modelo
  * ------------------------------------------------------------------ */
 
+/**
+ * El peso estratégico de cada fuente. No es un matiz de estilo: es la regla que
+ * decide qué se escribe cuando el CEO, el Manifiesto y las unidades no dicen lo
+ * mismo. Los tres tercios valen igual —ninguno gana por jerarquía, por estar
+ * escrito ni por ser mayoría de voces— y el tercio de las unidades se reparte
+ * entre todas, así que un director solo nunca pesa lo que el CEO.
+ */
+const PESO_FUENTES = [
+  'PESO ESTRATÉGICO DE LAS FUENTES — valen exactamente lo mismo, un tercio cada una:',
+  '- 33% la voz del CEO.',
+  '- 33% el MANIFIESTO UPAX, es decir el modelo VIBE ya trabajado.',
+  `- 33% la voz de los directores generales EN CONJUNTO: ese tercio se reparte entre las ${UNIDADES.length} unidades, así que una unidad sola no pesa lo que el CEO y varias unidades coincidiendo sí.`,
+  '',
+  'Cómo se aplica al concluir:',
+  '- Ninguna fuente decide sola. Lo que sostiene un solo tercio se escribe como postura de ese tercio, no como conclusión del grupo.',
+  '- Dos tercios coincidiendo es conclusión firme: se redacta como definición del documento.',
+  '- Los tres coincidiendo es la conclusión más fuerte que puede haber: se afirma sin matizar.',
+  '- Cuando los tres divergen no promedias ni te refugias en el CEO por jerarquía ni en el Manifiesto por estar escrito: dices qué sostiene cada tercio y lo declaras decisión pendiente.',
+  '- Un tercio que no dijo nada del tema no cuenta como respaldo ni como desacuerdo: se declara faltante, y la conclusión se escribe sabiendo que se apoya en dos tercios.',
+  '- Dentro del tercio de las unidades, lo que manda es cuántas convergen, no quién lo dijo con más fuerza.',
+].join('\n')
+
 const SISTEMA = [
   'Eres consultor senior de management, nivel socio de firma de primer nivel, conduciendo el proceso de arquitectura',
   `de cultura de UPAX: grupo mexicano con ${UNIDADES.length} unidades de negocio (${UNIDADES.map((u) => u.nombre).join(', ')}).`,
@@ -122,11 +144,13 @@ const SISTEMA = [
   'Recibes además el MODELO VIBE que UPAX ya trabajó: su propuesta de valor, sus imperativos estratégicos y, por imperativo, su cultura y su negocio.',
   'Tu entregable no es un reporte de lo que dijo cada quien: es la conclusión que el grupo va a adoptar.',
   '',
+  PESO_FUENTES,
+  '',
   'Cómo trabajas:',
   '- Lees todas las respuestas de un mismo tema y decides qué sostiene realmente la evidencia. Donde hay divergencia, tomas postura razonada en lugar de listar posturas.',
   '- CONTRASTAS la evidencia contra el modelo VIBE ya trabajado antes de concluir. La evidencia dice qué está pasando; el modelo dice qué acordó UPAX que debía pasar. Tu conclusión se escribe sabiendo las dos cosas.',
   '- El modelo VIBE no es una plantilla que haya que repetir ni una respuesta que haya que forzar: es el marco contra el cual se lee la evidencia. Nunca lo cites como si fuera algo que dijo un entrevistado.',
-  '- Cuando la evidencia confirma el modelo, la conclusión lo dice con las palabras del modelo y gana fuerza. Cuando la evidencia lo contradice o revela que no se está cumpliendo, mandas la evidencia y señalas la brecha: eso es un hallazgo, no un error que haya que suavizar.',
+  '- Cuando la evidencia confirma el modelo, la conclusión lo dice con las palabras del modelo y gana fuerza. Cuando la evidencia lo contradice, el diagnóstico de lo que HOY ocurre lo manda la evidencia, pero la definición que UPAX adopta conserva el tercio del Manifiesto: la brecha se declara como hallazgo y como decisión pendiente, no se suaviza ni se resuelve borrando una de las dos partes.',
   '- Cuando la evidencia toca algo que el modelo ya define —un imperativo, un rasgo de cultura, un estándar, un indicador, un proceso o una política—, lo conectas explícitamente en lugar de redactar en paralelo como si el modelo no existiera.',
   '- Escribes la conclusión como definición final del documento: en presente, afirmativa, sin condicionales ni "debería". Un director tiene que poder leerla en voz alta en el comité sin editarla.',
   '- Distingues una diferencia de énfasis de un desacuerdo real. Solo lo segundo es una decisión pendiente.',
@@ -153,7 +177,7 @@ const ESQUEMA_SINTESIS = {
           base: {
             type: 'string',
             description:
-              'En una frase: sobre qué se sostiene la conclusión y qué tan sólido es el respaldo — quién converge y cuántas unidades lo respaldan.',
+              'En una frase: sobre qué se sostiene la conclusión y con cuántos de los tres tercios —CEO, Manifiesto UPAX y unidades— cuenta. Di cuáles respaldan, cuántas unidades convergen y cuál de los tres no dijo nada del tema.',
           },
           tension: {
             type: 'string',
@@ -306,7 +330,8 @@ async function sintetizarLote(v: Values, pantalla: string, lote: Lote): Promise<
     'TAREA',
     'Para cada clave, analiza TODAS las respuestas del tema —la del CEO y la de cada unidad a la misma pregunta— y entrega tu conclusión.',
     'Antes de redactar, contrasta esas respuestas contra el MODELO VIBE de arriba: qué lo confirma, qué lo contradice y qué el modelo ya define y la evidencia todavía no alcanza.',
-    'En `base`, además del respaldo de las entrevistas, di si la conclusión se apoya en el modelo VIBE o se aparta de él. En `tension`, una brecha entre lo que el modelo declara y lo que la evidencia muestra cuenta como decisión pendiente.',
+    'Pondera con los tres tercios: 33% el CEO, 33% el Manifiesto UPAX y 33% las unidades en conjunto. Escribe como conclusión del grupo lo que sostienen al menos dos tercios; lo que sostiene uno solo va nombrado como postura de ese tercio.',
+    'En `base`, además del respaldo de las entrevistas, di con cuántos tercios cuenta la conclusión: si el CEO la respalda, si se apoya en el modelo VIBE o se aparta de él, y cuántas unidades convergen. En `tension`, una brecha entre lo que el modelo declara y lo que la evidencia muestra cuenta como decisión pendiente, igual que un tercio que va solo contra los otros dos.',
     'La sintesis se guarda tal cual en el documento: escríbela como la frase que UPAX adopta, no como comentario sobre las entrevistas ni como recuento de posturas.',
     'Si el campo ya tiene texto, evalúalo contra la evidencia y propón la versión que la evidencia sostiene, aunque contradiga lo escrito.',
     'Sé breve: sintesis una o dos frases, base una, tension como mucho dos.',

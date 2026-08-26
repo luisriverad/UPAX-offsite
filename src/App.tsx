@@ -208,6 +208,7 @@ export default function App() {
           </div>
 
           <footer className="pie">
+            <span className="pie-powered">POWERED BY AXON B2B</span>
             <span className="folio">
               {screen.num} / {SCREENS.length}
             </span>
