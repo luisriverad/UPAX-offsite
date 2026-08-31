@@ -16,7 +16,7 @@ export default function S07Conductas() {
       <div className="cuadricula" style={{ gridTemplateColumns: `170px repeat(${cols.length}, minmax(0,1fr))` }}>
         <div className="cuad-eje">CÓMO PENSAMOS, DECIDIMOS Y ACTUAMOS</div>
         {cols.map((c) => (
-          <div key={c.i} className={`cuad-col ${c.i === 0 ? 'primera' : ''}`}>
+          <div key={c.i} className="cuad-col">
             <span className="cuad-col-n">{c.ordinal}</span>
             {c.texto && <span className="cuad-col-t">{c.texto}</span>}
           </div>

@@ -11,6 +11,9 @@ import { IMPERATIVOS_MANIFIESTO, PDV_MANIFIESTO } from '../data/manifiesto'
 import type { AnalisisGrupo } from './asistenteEntrevista'
 import { EJEMPLOS_ARQUITECTURA } from '../data/ejemplos'
 import { IMP_DEFAULT, K, documento, unidadDe } from './model'
+import { REGLA_ATRIBUCION, sinAtribucion } from './atribucion'
+import { REGLA_PUNTUACION, sinGuionesNiDosPuntos } from './puntuacion'
+import { REGLA_TONO } from './tono'
 import { MOLDES_PDV, campoPdv, conArranque } from './redaccionPdv'
 import type { Values } from '../types'
 
@@ -105,6 +108,12 @@ export function marcoVibe(): string {
   return out.join('\n')
 }
 
+/**
+ * Los nombres con los que hay que tener cuidado al escribir: los de las
+ * unidades tal como el grupo las llama hoy, porque se pueden renombrar.
+ */
+const nombresDeUnidad = (v: Values): string[] => UNIDADES.map((u) => unidadDe(v, u.id))
+
 /** Sin nada capturado no hay nada que sintetizar: se evita gastar la llamada. */
 export function hayEvidencia(v: Values): boolean {
   return evidencia(v).length > 0
@@ -157,6 +166,12 @@ const SISTEMA = [
   '- Rechazas el lenguaje genérico: "calidad", "excelencia", "sinergia", "clase mundial", "ser los mejores" no son conclusiones, son ruido. Si toda la evidencia es de ese tipo, lo dices en vez de maquillarlo.',
   '- No inventas. Todo lo que afirmes tiene que poder rastrearse a una respuesta concreta.',
   '- Español de México. Tono ejecutivo y directo, sin preámbulo ni cierre cortés.',
+  '',
+  REGLA_ATRIBUCION,
+  '',
+  REGLA_TONO,
+  '',
+  REGLA_PUNTUACION,
 ].join('\n')
 
 /** El modelo devuelve JSON validado contra estos esquemas, no texto libre que haya que parsear. */
@@ -352,12 +367,15 @@ async function sintetizarLote(v: Values, pantalla: string, lote: Lote): Promise<
     campos?: { clave: string; sintesis: string; base: string; tension: string }[]
   }
   const campos = new Map<string, SintesisIA>()
+  const nombres = nombresDeUnidad(v)
+  // el nombre que se le haya escapado al modelo no llega al documento
+  const limpiar = (t: string) => sinAtribucion(sinGuionesNiDosPuntos(t), nombres)
   ;(data.campos ?? []).forEach((c) => {
     if (c?.clave && c.sintesis?.trim()) {
       campos.set(c.clave, {
-        sintesis: conArranque(c.clave, c.sintesis),
-        base: c.base?.trim() ?? '',
-        tension: c.tension?.trim() ?? '',
+        sintesis: conArranque(c.clave, limpiar(c.sintesis)),
+        base: limpiar(c.base?.trim() ?? ''),
+        tension: limpiar(c.tension?.trim() ?? ''),
       })
     }
   })
@@ -503,8 +521,12 @@ export async function proponerImperativos(v: Values): Promise<ImperativoPropuest
     imperativos?: { nombre: string; corto: string }[]
   }
 
+  const nombres = nombresDeUnidad(v)
   const propuestos = (data.imperativos ?? [])
-    .map((im) => ({ nombre: (im?.nombre ?? '').trim(), corto: (im?.corto ?? '').trim() }))
+    .map((im) => ({
+      nombre: sinAtribucion(sinGuionesNiDosPuntos((im?.nombre ?? '').trim()), nombres),
+      corto: sinAtribucion(sinGuionesNiDosPuntos((im?.corto ?? '').trim()), nombres),
+    }))
     .filter((im) => im.nombre)
     .slice(0, IMP_DEFAULT)
 
@@ -549,6 +571,8 @@ const SISTEMA_REDACCION = [
   '',
   'Español de México. Sin preámbulo ni comentario: entregas la frase lista para el documento.',
   'Siempre entregas una versión elevada. Devolver el texto idéntico solo se justifica si ya está exactamente a ese nivel.',
+  '',
+  REGLA_PUNTUACION,
 ].join('\n')
 
 const ESQUEMA_REDACCION = {
@@ -568,7 +592,7 @@ const ESQUEMA_REDACCION = {
           cambio: {
             type: 'string',
             description:
-              'Qué se elevó, en una frase corta y concreta (por ejemplo: "de descripción operativa a compromiso institucional"). Cadena vacía solo si el texto quedó idéntico.',
+              'Qué se elevó, en una frase corta y concreta, por ejemplo "de descripción operativa a compromiso institucional". Cadena vacía solo si el texto quedó idéntico.',
           },
         },
         required: ['clave', 'texto', 'cambio'],
@@ -605,7 +629,10 @@ async function corregirLote(lote: Lote): Promise<Map<string, CorreccionIA>> {
   const campos = new Map<string, CorreccionIA>()
   ;(data.campos ?? []).forEach((c) => {
     if (c?.clave && c.texto?.trim()) {
-      campos.set(c.clave, { texto: conArranque(c.clave, c.texto), cambio: c.cambio?.trim() ?? '' })
+      campos.set(c.clave, {
+        texto: conArranque(c.clave, sinGuionesNiDosPuntos(c.texto)),
+        cambio: sinGuionesNiDosPuntos(c.cambio?.trim() ?? ''),
+      })
     }
   })
   return campos
@@ -747,7 +774,13 @@ const SISTEMA_DIAMANTE = [
   '- No inflas para quedar bien ni castigas para parecer riguroso. La calificación tiene que poder defenderse frente al comité con hechos concretos.',
   '',
   'El sustento de cada eje: dos frases como máximo, en español de México, tono ejecutivo y directo.',
-  'Nombra la evidencia concreta —quién lo dijo, qué unidad, qué documento— en vez de generalidades. Nada de "excelencia", "sinergia" ni "clase mundial".',
+  'Nombra el hecho concreto que lo sostiene, sin decir de quién es. Nada de generalidades ni de "excelencia", "sinergia" o "clase mundial".',
+  '',
+  REGLA_ATRIBUCION,
+  '',
+  REGLA_TONO,
+  '',
+  REGLA_PUNTUACION,
 ].join('\n')
 
 const ESQUEMA_DIAMANTE = {
@@ -765,7 +798,7 @@ const ESQUEMA_DIAMANTE = {
           sustento: {
             type: 'string',
             description:
-              'Por qué ese número y no otro, citando la evidencia concreta que lo sostiene o diciendo que no la hay. Máximo dos frases.',
+              'Por qué ese número y no otro, citando la evidencia concreta que lo sostiene o diciendo que no la hay, siempre en impersonal y sin nombrar a la unidad ni al puesto de donde sale. Máximo dos frases.',
           },
         },
         required: ['eje', 'puntaje', 'sustento'],
@@ -797,6 +830,7 @@ export async function calificarDiamante(v: Values): Promise<DiamanteIA> {
     'Con TODO lo anterior, califica los cuatro ejes del Diamante de Alineación de UPAX de 0 a 10 y escribe la lectura de conjunto.',
     'Usa toda la información disponible, no solo un bloque: las entrevistas dicen qué está pasando, el modelo VIBE dice qué acordó UPAX que debía pasar, y la brecha entre ambos es parte de la calificación.',
     'Devuelve exactamente los cuatro ejes, una vez cada uno.',
+    'El sustento y la lectura van en impersonal, sin nombrar unidades ni puestos: se dice el hecho, no de quién es.',
   ].join('\n')
 
   const data = (await llamar(SISTEMA_DIAMANTE, instruccion, ESQUEMA_DIAMANTE)) as {
@@ -805,14 +839,16 @@ export async function calificarDiamante(v: Values): Promise<DiamanteIA> {
   }
 
   const ejes = {} as Record<EjeDiamante, CalificacionEje>
+  const nombres = nombresDeUnidad(v)
+  const limpiar = (t: string) => sinAtribucion(sinGuionesNiDosPuntos(t), nombres)
   ;(data.ejes ?? []).forEach((e) => {
     const id = e?.eje as EjeDiamante
     if (!['est', 'ofe', 'gen', 'pro'].includes(id)) return
     const n = Math.round(Number(e.puntaje))
     if (!Number.isFinite(n)) return
-    ejes[id] = { puntaje: Math.min(10, Math.max(0, n)), sustento: (e.sustento ?? '').trim() }
+    ejes[id] = { puntaje: Math.min(10, Math.max(0, n)), sustento: limpiar((e.sustento ?? '').trim()) }
   })
 
   if (Object.keys(ejes).length < 4) throw new ErrorIA('El modelo no devolvió los cuatro ejes calificados.')
-  return { ejes, lectura: (data.lectura ?? '').trim() }
+  return { ejes, lectura: limpiar((data.lectura ?? '').trim()) }
 }

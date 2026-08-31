@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { UNIDADES } from '../../data/content'
+import { sinAtribucion } from '../../lib/atribucion'
 import { ErrorIA, calificarDiamante } from '../../lib/ia'
 import { K } from '../../lib/model'
 import { useStore } from '../../lib/store'
@@ -65,9 +67,9 @@ export interface Hallazgo {
 
 const REMEDIOS: Record<string, string> = {
   Estrategia: 'Define en una página: a quién sí, a quién no, y las tres apuestas del año.',
-  Oferta: 'Revisa margen y diferenciación producto por producto; poda lo que no gana ni posiciona.',
-  Gente: 'Aclara responsabilidades y métricas por puesto; cubre la brecha de capacidad con capacitación o cambio.',
-  Procesos: 'Documenta y mide el proceso que toca al cliente; ahí está la fuga que se ve en el estado de resultados.',
+  Oferta: 'Revisa margen y diferenciación producto por producto, y concentra el esfuerzo en lo que gana o posiciona.',
+  Gente: 'Aclara responsabilidades y métricas por puesto, y cubre la brecha de capacidad con capacitación o con un ajuste de equipo.',
+  Procesos: 'Documenta y mide el proceso que toca al cliente, que es donde el estado de resultados alcanza a ver la diferencia.',
 }
 
 /**
@@ -84,26 +86,26 @@ export function hallazgos(s: Puntajes): Hallazgo[] {
   if (vert >= 3)
     out.push({
       tono: 'crit',
-      titulo: 'Estrategia que no baja al piso',
-      detalle: `La dirección tiene claridad (${e}) que el equipo no alcanza (${g}). El plan se queda en la junta directiva: se decide arriba y se improvisa abajo. Traduce la estrategia a metas por persona antes de decidir nada nuevo.`,
+      titulo: 'Estrategia que todavía no baja al piso',
+      detalle: `Arriba hay claridad (${e}) que el equipo todavía no alcanza (${g}), así que el plan se queda en la mesa de dirección y abajo se resuelve sobre la marcha. Traducir la estrategia a metas por persona es el paso que falta antes de decidir algo nuevo.`,
     })
   if (vert <= -3)
     out.push({
       tono: 'warn',
       titulo: 'Equipo esperando rumbo',
-      detalle: `Tienes gente capaz (${g}) sin una estrategia que la ordene (${e}). Se trabaja mucho y avanza poco, porque cada quien elige su prioridad. El cuello de botella es una decisión de dirección, no de talento.`,
+      detalle: `Hay gente capaz (${g}) sin una estrategia que la ordene (${e}), así que se trabaja mucho y se avanza menos de lo que se podría porque cada quien elige su prioridad. Lo que destraba esto es una decisión de dirección, no más talento.`,
     })
   if (horz >= 3)
     out.push({
       tono: 'crit',
-      titulo: 'Promesa mayor que la operación',
-      detalle: `La oferta vale (${o}) pero los procesos no la sostienen (${p}). Se vende bien y se entrega mal: reprocesos, quejas y margen que se evapora en la entrega. Crecer así multiplica el problema.`,
+      titulo: 'Promesa por delante de la operación',
+      detalle: `La oferta vale (${o}) y los procesos todavía no la sostienen (${p}), de manera que se vende mejor de lo que hoy se entrega y ahí aparecen los reprocesos y el margen que se queda en el camino. Cerrar esa distancia antes de crecer sale más barato que cerrarla después.`,
     })
   if (horz <= -3)
     out.push({
       tono: 'warn',
-      titulo: 'Máquina eficiente sin diferencia',
-      detalle: `Operas con orden (${p}) una oferta que no destaca (${o}). Serás muy eficiente compitiendo por precio. La palanca está en el producto y su propuesta de valor, no en más eficiencia.`,
+      titulo: 'Orden operativo sin diferencia clara',
+      detalle: `Se opera con orden (${p}) una oferta que todavía no destaca (${o}), y con esa combinación la competencia termina siendo por precio. La palanca está en el producto y su propuesta de valor, no en más eficiencia.`,
     })
 
   const arr: [string, number][] = [
@@ -116,8 +118,8 @@ export function hallazgos(s: Puntajes): Hallazgo[] {
   const max = [...arr].sort((a, b) => b[1] - a[1])[0]
   out.push({
     tono: tono(min[1]),
-    titulo: `Eslabón más débil: ${min[0]} (${min[1]})`,
-    detalle: `La figura se rompe por aquí, y ningún eje rinde más que su eslabón débil: ${max[0]} en ${max[1]} no compensa a ${min[0]} en ${min[1]}. ${REMEDIOS[min[0]]}`,
+    titulo: `El eje que más limita hoy: ${min[0]} (${min[1]})`,
+    detalle: `La figura se cierra por aquí, y ningún eje rinde más que el más bajo, así que ${max[0]} en ${max[1]} no compensa a ${min[0]} en ${min[1]}. ${REMEDIOS[min[0]]}`,
   })
 
   if (Math.abs(vert) <= 2 && Math.abs(horz) <= 2 && min[1] >= 7)
@@ -137,6 +139,15 @@ export function nivelAlineacion(s: Puntajes): number {
   return Math.round((0.5 * (e * o + o * g + g * p + p * e)) / 2) // el máximo son 200
 }
 
+/**
+ * Los nombres de las unidades tal como se llaman hoy. Se leen del mismo lugar
+ * que el resto de la captura para poder taparlos en el texto que ya se guardó
+ * antes de que existiera la regla de atribución.
+ */
+function nombresUnidad(get: (k: string) => string): string[] {
+  return UNIDADES.map((u) => get(K.dgUnidad(u.id)) || u.nombre)
+}
+
 export function puntajes(get: (k: string) => string): Puntajes {
   const leer = (id: EjeId) => {
     const v = parseInt(get(K.dia(id)), 10)
@@ -153,20 +164,22 @@ export function puntajes(get: (k: string) => string): Puntajes {
 /** El mismo diagnóstico en texto plano, para pegarlo en una minuta o un correo. */
 export function resumenDiamante(get: (k: string) => string): string {
   const s = puntajes(get)
+  const nombres = nombresUnidad(get)
+  const generico = (t: string) => sinAtribucion(t, nombres)
   const promedio = ((s.est + s.ofe + s.gen + s.pro) / 4).toFixed(1)
   const desbalance = Math.max(s.est, s.ofe, s.gen, s.pro) - Math.min(s.est, s.ofe, s.gen, s.pro)
   const lineas = [
     'DIAMANTE DE ALINEACIÓN',
     '',
     ...EJES.map((a) => {
-      const sustento = get(K.diaSustento(a.id))
+      const sustento = generico(get(K.diaSustento(a.id)))
       return `${a.name} (${a.dir.toLowerCase()}): ${s[a.id]}/10${sustento ? ` — ${sustento}` : ''}`
     }),
     '',
     `Nivel de alineación: ${nivelAlineacion(s)}%   |   Promedio: ${promedio}   |   Desbalance: ${desbalance}`,
     '',
   ]
-  const lectura = get(K.diaLectura)
+  const lectura = generico(get(K.diaLectura))
   if (lectura) lineas.push(lectura, '')
   hallazgos(s).forEach((h) => lineas.push(`• ${h.titulo} — ${h.detalle}`))
   return lineas.join('\n')
@@ -178,7 +191,11 @@ export default function DiamanteAlineacion() {
   const [pensando, setPensando] = useState(false)
   const [seg, setSeg] = useState(0)
   const s = puntajes(get)
-  const lectura = get(K.diaLectura)
+  // se tapa al leer, no solo al escribir: lo calificado antes de la regla
+  // también circula sin nombres
+  const nombres = nombresUnidad(get)
+  const generico = (t: string) => sinAtribucion(t, nombres)
+  const lectura = generico(get(K.diaLectura))
 
   function avisar(t: string) {
     setAviso(t)
@@ -192,6 +209,23 @@ export default function DiamanteAlineacion() {
     const t = setInterval(() => setSeg((x) => x + 1), 1000)
     return () => clearInterval(t)
   }, [pensando])
+
+  // al exportar, la hoja se aísla del resto de la aplicación; hay que devolverla
+  // a su sitio al terminar, se haya impreso o se haya cancelado
+  useEffect(() => {
+    const limpiar = () => document.body.classList.remove('solo-diamante')
+    window.addEventListener('afterprint', limpiar)
+    return () => {
+      window.removeEventListener('afterprint', limpiar)
+      limpiar()
+    }
+  }, [])
+
+  /** La hoja completa —figura, ejes con su sustento y lectura— en una sola página. */
+  function exportarPdf() {
+    document.body.classList.add('solo-diamante')
+    window.print()
+  }
 
   /**
    * El modelo lee todo lo capturado en la plataforma y mueve los cuatro ejes con
@@ -228,6 +262,8 @@ export default function DiamanteAlineacion() {
   const promedio = (s.est + s.ofe + s.gen + s.pro) / 4
   const desbalance = Math.max(s.est, s.ofe, s.gen, s.pro) - Math.min(s.est, s.ofe, s.gen, s.pro)
 
+  // el color mantiene la urgencia; las palabras describen una etapa, no dictan
+  // una sentencia. Un veredicto que suena a condena se discute como insulto
   const veredicto =
     pct >= 75 && desbalance <= 2
       ? {
@@ -238,23 +274,38 @@ export default function DiamanteAlineacion() {
       : pct >= 55
         ? {
             tono: 'ambar' as const,
-            label: 'Funcional con fugas',
-            nota: 'Opera, pero pierde en las juntas de los ejes. Hay margen recuperable.',
+            label: 'Alineación parcial',
+            nota: 'La operación funciona y hay margen recuperable en las juntas entre un eje y otro.',
           }
         : pct >= 30
           ? {
               tono: 'rojo' as const,
-              label: 'Desalineada',
-              nota: 'La desalineación ya cuesta dinero: se nota en margen, rotación o reprocesos.',
+              label: 'Alineación despareja',
+              nota: 'Los ejes avanzan a distinto ritmo, y esa diferencia se alcanza a ver en margen, en rotación o en reprocesos.',
             }
           : {
               tono: 'rojo' as const,
-              label: 'Desalineación crítica',
-              nota: 'La empresa avanza por esfuerzo individual, no por sistema.',
+              label: 'Alineación por construir',
+              nota: 'Hoy el resultado se sostiene más en el esfuerzo de cada quien que en el sistema. Ahí está la palanca más grande.',
             }
 
   return (
     <div className="dia">
+      {/* membrete: solo aparece en el PDF, donde la hoja circula sin la aplicación */}
+      <header className="dia-print-h">
+        <img className="dia-print-logo" src="/logo-upax.png" alt="Grupo UPAX" />
+        <div>
+          <h2>Diamante de alineación</h2>
+          <p>
+            Estrategia · Oferta · Gente · Procesos — {new Date().toLocaleDateString('es-MX', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </p>
+        </div>
+      </header>
+
       <div className="dia-cols">
         <section className="caja dia-plot">
           <header className="caja-h">
@@ -392,13 +443,17 @@ export default function DiamanteAlineacion() {
                 aria-label={`${a.name}, de 0 a 10`}
                 onChange={(e) => set(K.dia(a.id), e.target.value)}
               />
+              {/* el deslizador es de pantalla; en papel el mismo dato va como barra */}
+              <div className="dia-barra" aria-hidden="true">
+                <i style={{ width: `${s[a.id] * 10}%` }} />
+              </div>
               <div className="dia-escala">
                 <span>0 · Muy bajo</span>
                 <span>5</span>
                 <span>10 · Muy alto</span>
               </div>
               {/* por qué ese número: solo aparece cuando el auto-análisis lo escribió */}
-              {get(K.diaSustento(a.id)) && <p className="dia-sustento">{get(K.diaSustento(a.id))}</p>}
+              {get(K.diaSustento(a.id)) && <p className="dia-sustento">{generico(get(K.diaSustento(a.id)))}</p>}
             </div>
           ))}
         </section>
@@ -466,6 +521,9 @@ export default function DiamanteAlineacion() {
             }}
           >
             Copiar resumen
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={exportarPdf}>
+            Exportar a PDF
           </button>
           <button
             type="button"

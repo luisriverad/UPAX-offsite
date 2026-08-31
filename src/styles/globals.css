@@ -589,6 +589,46 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
 
 @media (prefers-reduced-motion: reduce){ .kite,.node,.axis-val{transition:none} }
 
+/* ---- lo que solo existe en el PDF ---- */
+/* membrete de la hoja exportada: en pantalla la aplicación ya dice dónde estás */
+.dia-print-h{display:none;align-items:center;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.dia-print-logo{height:32px;width:auto;display:block}
+.dia-print-h h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.dia-print-h p{margin:2px 0 0;font-size:11px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted)}
+/* el deslizador no se imprime igual en todos los navegadores: en papel va esta barra */
+.dia-barra{display:none;height:7px;border-radius:999px;background:var(--line);margin:4px 0 0;overflow:hidden}
+.dia-barra i{display:block;height:100%;border-radius:999px;background:var(--orange)}
+
+/* Exportar el diamante: la hoja completa —figura, ejes y lectura— en papel */
+@media print{
+  body.solo-diamante *{visibility:hidden}
+  body.solo-diamante .dia,body.solo-diamante .dia *{visibility:visible}
+  body.solo-diamante .dia{
+    position:absolute;left:0;top:0;width:100%;gap:14px;page:diamante;
+    /* la figura y los semáforos son el diagnóstico: tienen que salir a color */
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  body.solo-diamante .dia-print-h{display:flex}
+  body.solo-diamante .dia-barra{display:block}
+  /* los controles de trabajo no viajan al PDF */
+  body.solo-diamante .dia-auto,
+  body.solo-diamante .dia-acciones,
+  body.solo-diamante .dia-eje input[type=range]{display:none !important}
+  /* en papel manda una sola columna: la figura arriba y el detalle debajo */
+  body.solo-diamante .dia-cols{grid-template-columns:minmax(0,1fr)}
+  body.solo-diamante .plot{max-width:440px;margin:0 auto}
+  body.solo-diamante .caja{background:#fff}
+  /* nada se parte a la mitad: ni la figura, ni un eje, ni un hallazgo */
+  body.solo-diamante .dia-plot,
+  body.solo-diamante .dia-eje,
+  body.solo-diamante .dia-stat,
+  body.solo-diamante .dia-veredicto,
+  body.solo-diamante .dia-hallazgos li,
+  body.solo-diamante .dia-guias > div{break-inside:avoid}
+}
+@page diamante{size:A4 portrait;margin:12mm}
+
 /* ---------------------------------------------------------------- *
  * 03b · alineación CEO ↔ DGs
  * ---------------------------------------------------------------- */
@@ -699,14 +739,14 @@ h1{margin:8px 0 0;font-size:34px;line-height:1.08;letter-spacing:-.03em;font-wei
   align-self:center;line-height:1.4}
 /* el encabezado lleva dos renglones: el ordinal fijo y el imperativo de la 06 */
 .cuad-col{
-  display:flex;flex-direction:column;gap:3px;text-align:center;
-  background:var(--line2);color:#6E7078;padding:9px 10px;border-radius:8px;overflow:hidden;
+  display:flex;flex-direction:column;gap:5px;text-align:center;
+  background:var(--orange-soft);color:var(--orange-ink);padding:14px 12px;border-radius:10px;overflow:hidden;
 }
-.cuad-col-n{font-size:11px;letter-spacing:.05em;font-weight:800;text-transform:uppercase;
+.cuad-col-n{font-size:13px;letter-spacing:.08em;font-weight:800;text-transform:uppercase;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cuad-col-t{font-size:11.5px;font-weight:700;line-height:1.35;color:var(--ink)}
-.cuad-col.primera{background:var(--orange-soft);color:var(--orange-ink)}
-.cuad-col.primera .cuad-col-t{color:var(--orange-ink)}
+/* el nombre del imperativo es lo que se lee desde la otra punta de la sala:
+   manda sobre el ordinal, no al revés. No se recorta —envuelve en dos líneas */
+.cuad-col-t{font-size:22px;font-weight:800;line-height:1.2;color:var(--orange);letter-spacing:-.01em}
 .cuad-fila{font-size:12px;font-weight:800;color:#B7B8BE;padding-top:14px;font-variant-numeric:tabular-nums}
 .celda{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:10px 12px;
   display:flex;flex-direction:column;gap:6px;min-height:86px}

@@ -200,19 +200,25 @@ function sintesisTema(v: Values, bloque: string, idx: number[]): SintesisLocal {
   const coinciden = resto.filter((x) => comparten(clave, terminos(x.texto)) >= 2)
   const aparte = resto.filter((x) => !coinciden.includes(x))
 
+  // se dice cuántas voces sostienen qué, nunca cuáles: el hallazgo viaja sin
+  // dueño para que en la mesa se discuta el hecho y no a quien lo dijo
   const base: string[] = []
   base.push(
     conCeo
       ? `${delCeo.length} ${delCeo.length === 1 ? 'respuesta' : 'respuestas'} del CEO`
-      : `sin respuesta del CEO en este tema; formulación de ${voces[0].unidad}`,
+      : 'sin respuesta del CEO en este tema; formulación tomada de una unidad',
   )
-  if (coinciden.length) base.push(`la sostienen ${coinciden.map((x) => x.unidad).join(', ')}`)
+  if (coinciden.length)
+    base.push(`la sostienen ${coinciden.length} ${coinciden.length === 1 ? 'unidad más' : 'unidades más'}`)
   base.push(`${voces.length} de ${UNIDADES.length} unidades con respuesta`)
 
   const tension: string[] = []
   if (aparte.length) {
-    tension.push(`${aparte[0].unidad} propone en cambio: “${principal(aparte[0].texto)}”`)
-    if (aparte.length > 1) tension.push(`también se apartan ${aparte.slice(1).map((x) => x.unidad).join(', ')}`)
+    tension.push(`una unidad propone en cambio: “${principal(aparte[0].texto)}”`)
+    if (aparte.length > 1)
+      tension.push(
+        aparte.length === 2 ? 'también se aparta otra unidad' : `también se apartan otras ${aparte.length - 1} unidades`,
+      )
   }
   if (!voces.length) tension.push('ninguna unidad ha respondido sobre este tema todavía')
 
