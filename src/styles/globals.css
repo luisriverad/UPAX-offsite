@@ -54,7 +54,7 @@ button,input,textarea,select{font-family:inherit;color:inherit}
 .vibe{display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1;white-space:nowrap}
 .vibe-n{font-size:16px;font-weight:800;letter-spacing:.08em}
 .vibe-n em{font-style:normal;font-weight:600;font-size:12px;letter-spacing:.02em;color:var(--muted)}
-.vibe-s{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.vibe-s{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--orange)}
 .vibe-s b{color:var(--orange);font-weight:800}
 /* el logo manda y el descriptor lo acompaña: si la barra se estrecha, lo que
    cede es el texto —con puntos suspensivos—, nunca la marca */
